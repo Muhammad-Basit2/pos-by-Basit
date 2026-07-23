@@ -24,3 +24,13 @@ body{
 #invoice{
     font-size: xx-large;
 }
+
+.myschool{
+    background: #ff0000;
+
+}
+.myteacher{
+    background: rgb(251, 251, 246);
+    text-align: center;
+    color: blue;
+}
