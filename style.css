@@ -34,3 +34,9 @@ body{
     text-align: center;
     color: blue;
 }
+.room{
+    width: 12rem;
+    height: 12rem;
+    background: red;
+    box-shadow: 5px 13px 15px #00ff7b;
+}
