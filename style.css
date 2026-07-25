@@ -1,47 +1,51 @@
-*{
+* {
     padding: 0%;
     margin: 0%;
     box-sizing: border-box;
 }
 
-body{
+body {
     background: #dcc2ec;
 }
 
-.head{
+.head {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin: 10px;
 }
-.subheader{
+
+.subheader {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-left: 6rem;
     margin-right: 6rem;
 }
-#invoice{
+
+#invoice {
     font-size: xx-large;
 }
 
-.myschool{
+.myschool {
     background: #ff0000;
 
 }
-.myteacher{
+
+.myteacher {
     background: rgb(251, 251, 246);
     text-align: center;
     color: blue;
 }
-.room{
+
+.room {
     width: 12rem;
     height: 12rem;
     background: red;
     box-shadow: 5px 13px 15px #00ff7b;
 }
 
-.btn{
+.btn {
     font-size: xx-large;
     width: 12rem;
     height: 6rem;
@@ -51,9 +55,20 @@ body{
     color: antiquewhite;
     box-shadow: 5px 5px 5px black;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: .5rem;
+    padding: .5rem;
 }
-.btn:hover{
+
+.btn:hover {
     background-color: #2980b9;
     width: 11rem;
     height: 5rem;
+}
+.btn-container{
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
