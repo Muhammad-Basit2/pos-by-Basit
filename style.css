@@ -72,3 +72,13 @@ body {
     align-items: center;
     justify-content: center;
 }
+table, th, td {
+  border: 1px solid black;    /* Adds a solid border to all elements */
+  border-collapse: collapse;  /* Merges double borders into a single clean line */
+  padding: 10px;              /* Adds breathing room inside each cell */
+}
+.table{
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
