@@ -40,3 +40,20 @@ body{
     background: red;
     box-shadow: 5px 13px 15px #00ff7b;
 }
+
+.btn{
+    font-size: xx-large;
+    width: 12rem;
+    height: 6rem;
+    border: #00ff7b;
+    border-radius: 6px;
+    background: blueviolet;
+    color: antiquewhite;
+    box-shadow: 5px 5px 5px black;
+    cursor: pointer;
+}
+.btn:hover{
+    background-color: #2980b9;
+    width: 11rem;
+    height: 5rem;
+}
