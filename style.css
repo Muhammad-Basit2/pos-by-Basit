@@ -96,3 +96,9 @@ table, th, td {
     align-items: center;
     justify-content: center;
 }
+
+#submit{
+    width: 12rem;
+    height: 14rem;
+
+}
