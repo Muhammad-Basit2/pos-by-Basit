@@ -1,201 +1,366 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Talking Witch 🔮</title>
-    <style>
-        :root {
-            --bg-color: #0b071e;
-            --panel-bg: #191238;
-            --accent-purple: #9b59b6;
-            --accent-green: #2ecc71;
-            --text-color: #f3f0ff;
-            --glow: 0 0 15px rgba(155, 89, 182, 0.6);
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>QuickPOS System</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            overflow-x: hidden;
-        }
+    body {
+      background-color: #f4f6f9;
+      color: #333;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
 
-        .container {
-            width: 100%;
-            max-width: 600px;
-            background: var(--panel-bg);
-            border: 2px solid var(--accent-purple);
-            border-radius: 16px;
-            box-shadow: var(--glow);
-            padding: 30px;
-            text-align: center;
-            box-sizing: border-box;
-            margin: 20px;
-        }
+    /* Main Layout */
+    .pos-container {
+      display: flex;
+      width: 100%;
+      height: 100%;
+    }
 
-        h1 {
-            margin-top: 0;
-            color: #d7bde2;
-            font-size: 2.2rem;
-            text-shadow: 0 0 10px var(--accent-purple);
-        }
+    /* Products Section (Left) */
+    .products-section {
+      flex: 1;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
 
-        .witch-avatar {
-            font-size: 5rem;
-            margin: 10px 0;
-            animation: float 3s ease-in-out infinite;
-        }
+    .header {
+      margin-bottom: 20px;
+    }
 
-        @keyframes float {
-            0%, 100% { transform: translateY(0); }
-            50% { transform: translateY(-10px); }
-        }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      gap: 15px;
+    }
 
-        .chat-box {
-            background: #100b24;
-            border: 1px solid #4a235a;
-            border-radius: 8px;
-            height: 150px;
-            overflow-y: auto;
-            padding: 15px;
-            text-align: left;
-            margin-bottom: 20px;
-            font-size: 1.05rem;
-            line-height: 1.4;
-        }
+    .product-card {
+      background: #fff;
+      border-radius: 8px;
+      padding: 15px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      cursor: pointer;
+      transition: transform 0.1s ease, box-shadow 0.1s ease;
+      border: 1px solid #eef0f3;
+    }
 
-        .input-group {
-            display: flex;
-            gap: 10px;
-        }
+    .product-card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
 
-        input[type="text"] {
-            flex: 1;
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid var(--accent-purple);
-            background: #0b071e;
-            color: var(--text-color);
-            font-size: 1rem;
-        }
+    .product-card:active {
+      transform: scale(0.98);
+    }
 
-        input[type="text"]:focus {
-            outline: none;
-            box-shadow: var(--glow);
-        }
+    .product-name {
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
 
-        button {
-            padding: 12px 24px;
-            border: none;
-            border-radius: 8px;
-            background: var(--accent-purple);
-            color: white;
-            font-weight: bold;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: background 0.2s, box-shadow 0.2s;
-        }
+    .product-price {
+      color: #27ae60;
+      font-weight: bold;
+    }
 
-        button:hover {
-            background: #8e44ad;
-            box-shadow: var(--glow);
-        }
+    /* Cart Section (Right) */
+    .cart-section {
+      width: 380px;
+      background: #fff;
+      border-left: 1px solid #e1e4e8;
+      display: flex;
+      flex-direction: column;
+    }
 
-        .speaking {
-            animation: pulse 0.5s infinite alternate;
-        }
+    .cart-header {
+      padding: 20px;
+      border-bottom: 1px solid #e1e4e8;
+      background: #fafbfc;
+    }
 
-        @keyframes pulse {
-            0% { transform: scale(1); }
-            100% { transform: scale(1.05); }
-        }
-    </style>
+    .cart-items {
+      flex: 1;
+      overflow-y: auto;
+      padding: 15px;
+    }
+
+    .cart-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #f0f0f0;
+    }
+
+    .cart-item-details {
+      flex: 1;
+    }
+
+    .cart-item-title {
+      font-size: 0.95rem;
+      font-weight: 600;
+    }
+
+    .cart-item-subtotal {
+      font-size: 0.85rem;
+      color: #666;
+    }
+
+    .cart-controls {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-qty {
+      background: #eef0f3;
+      border: none;
+      width: 26px;
+      height: 26px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-weight: bold;
+    }
+
+    .btn-qty:hover {
+      background: #ddd;
+    }
+
+    /* Footer / Total Calculation */
+    .cart-footer {
+      padding: 20px;
+      border-top: 1px solid #e1e4e8;
+      background: #fafbfc;
+    }
+
+    .summary-row {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+
+    .summary-row.total {
+      font-size: 1.2rem;
+      font-weight: bold;
+      margin-top: 12px;
+      border-top: 2px dashed #ddd;
+      padding-top: 10px;
+    }
+
+    .btn-checkout {
+      width: 100%;
+      background: #27ae60;
+      color: white;
+      border: none;
+      padding: 14px;
+      border-radius: 6px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 15px;
+    }
+
+    .btn-checkout:hover {
+      background: #219150;
+    }
+
+    .btn-checkout:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+
+    /* Modal Styling */
+    .modal {
+      display: none;
+      position: fixed;
+      top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.5);
+      justify-content: center;
+      align-items: center;
+    }
+
+    .modal-content {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      text-align: center;
+      max-width: 350px;
+      width: 100%;
+    }
+
+    .btn-close {
+      margin-top: 20px;
+      background: #333;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+  </style>
 </head>
 <body>
 
-    <div class="container">
-        <h1>Talking Witch</h1>
-        <div class="witch-avatar" id="avatar">🧙‍♀️</div>
-        <p>Ask the oracle a question about your destiny...</p>
-
-        <div class="chat-box" id="chatBox">
-            <strong>Witch:</strong> Hehehe... Step closer, mortal. What knowledge do you seek from the shadows?
-        </div>
-
-        <div class="input-group">
-            <input type="text" id="userInput" placeholder="Ask the witch a question..." autofocus>
-            <button onclick="askWitch()">Consult</button>
-        </div>
+  <div class="pos-container">
+    <!-- Catalog Section -->
+    <div class="products-section">
+      <div class="header">
+        <h2>QuickPOS Catalog</h2>
+      </div>
+      <div class="product-grid" id="productGrid"></div>
     </div>
 
-    <script>
-        const witchResponses = [
-            "Hehehe... The crystal ball shows murky paths ahead. Beware of strangers bearing shiny trinkets!",
-            "Ah, the spirits whisper your name... They say fortune favors the bold, but patience keeps your fingers attached.",
-            "Cackle! Your future is as clear as muddy swamp water. Expect surprises before the next full moon.",
-            "The cards don't lie, traveler! Romance is brewing, but so is a bitter potion of drama.",
-            "I see gold in your future... or perhaps it's just fool's gold. Only time will tell, mwahaha!",
-            "Tread carefully! A black cat crosses your path soon, bringing either great luck or a heavy sneeze."
-        ];
+    <!-- Checkout Cart Section -->
+    <div class="cart-section">
+      <div class="cart-header">
+        <h3>Current Order</h3>
+      </div>
+      <div class="cart-items" id="cartItems">
+        <p style="color: #888; text-align: center; margin-top: 20px;">Cart is empty</p>
+      </div>
+      <div class="cart-footer">
+        <div class="summary-row">
+          <span>Subtotal</span>
+          <span id="subtotalAmount">$0.00</span>
+        </div>
+        <div class="summary-row">
+          <span>Tax (10%)</span>
+          <span id="taxAmount">$0.00</span>
+        </div>
+        <div class="summary-row total">
+          <span>Total</span>
+          <span id="totalAmount">$0.00</span>
+        </div>
+        <button class="btn-checkout" id="checkoutBtn" onclick="processCheckout()" disabled>Complete Sale</button>
+      </div>
+    </div>
+  </div>
 
-        // Trigger on Enter key
-        document.getElementById("userInput").addEventListener("keypress", function(event) {
-            if (event.key === "Enter") {
-                askWitch();
-            }
-        });
+  <!-- Receipt Modal -->
+  <div class="modal" id="receiptModal">
+    <div class="modal-content">
+      <h3>Transaction Complete!</h3>
+      <p style="margin-top: 10px;">Total Paid: <strong id="modalTotal">$0.00</strong></p>
+      <button class="btn-close" onclick="closeModal()">New Order</button>
+    </div>
+  </div>
 
-        function askWitch() {
-            const inputField = document.getElementById("userInput");
-            const chatBox = document.getElementById("chatBox");
-            const avatar = document.getElementById("avatar");
-            const userText = inputField.value.trim();
+  <script>
+    // Product Data
+    const products = [
+      { id: 1, name: 'Coffee', price: 3.50 },
+      { id: 2, name: 'Sandwich', price: 6.00 },
+      { id: 3, name: 'Croissant', price: 2.75 },
+      { id: 4, name: 'Orange Juice', price: 4.00 },
+      { id: 5, name: 'Muffin', price: 3.00 },
+      { id: 6, name: 'Tea', price: 2.50 },
+      { id: 7, name: 'Water Bottle', price: 1.50 },
+      { id: 8, name: 'Salad', price: 7.50 }
+    ];
 
-            if (!userText) return;
+    let cart = [];
+    const TAX_RATE = 0.10;
 
-            // Display user question
-            chatBox.innerHTML += <br><br><strong>You:</strong> ${userText};
-            inputField.value = "";
-            chatBox.scrollTop = chatBox.scrollHeight;
+    // Render Product Grid
+    function renderProducts() {
+      const grid = document.getElementById('productGrid');
+      grid.innerHTML = products.map(product => `
+        <div class="product-card" onclick="addToCart(${product.id})">
+          <div class="product-name">${product.name}</div>
+          <div class="product-price">$${product.price.toFixed(2)}</div>
+        </div>
+      `).join('');
+    }
 
-            // Pick a random witch response
-            const randomReply = witchResponses[Math.floor(Math.random() * witchResponses.length)];
+    // Add item to cart
+    function addToCart(productId) {
+      const existingItem = cart.find(item => item.id === productId);
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        const product = products.find(p => p.id === productId);
+        cart.push({ ...product, quantity: 1 });
+      }
+      updateCartDisplay();
+    }
 
-            // Display witch response
-            setTimeout(() => {
-                chatBox.innerHTML += <br><br><strong>Witch:</strong> ${randomReply};
-                chatBox.scrollTop = chatBox.scrollHeight;
-                
-                // Speak the response out loud
-                speakText(randomReply, avatar);
-            }, 600);
-        }
+    // Modify Item Quantity
+    function updateQuantity(productId, change) {
+      const item = cart.find(item => item.id === productId);
+      if (!item) return;
 
-        function speakText(text, avatarElement) {
-            if ('speechSynthesis' in window) {
-                // Stop any ongoing speech
-                window.speechSynthesis.cancel();
+      item.quantity += change;
+      if (item.quantity <= 0) {
+        cart = cart.filter(i => i.id !== productId);
+      }
+      updateCartDisplay();
+    }
 
-                const utterance = new SpeechSynthesisUtterance(text);
-                utterance.pitch = 0.6; // Deep, spooky voice
-                utterance.rate = 0.9;  // Slightly slower cadence
+    // Update Totals and Render Cart UI
+    function updateCartDisplay() {
+      const cartContainer = document.getElementById('cartItems');
+      const checkoutBtn = document.getElementById('checkoutBtn');
 
-                // Animate avatar while speaking
-                utterance.onstart = () => avatarElement.classList.add('speaking');
-                utterance.onend = () => avatarElement.classList.remove('speaking');
-                utterance.onerror = () => avatarElement.classList.remove('speaking');
+      if (cart.length === 0) {
+        cartContainer.innerHTML = '<p style="color: #888; text-align: center; margin-top: 20px;">Cart is empty</p>';
+        checkoutBtn.disabled = true;
+      } else {
+        cartContainer.innerHTML = cart.map(item => `
+          <div class="cart-item">
+            <div class="cart-item-details">
+              <div class="cart-item-title">${item.name}</div>
+              <div class="cart-item-subtotal">$${(item.price * item.quantity).toFixed(2)}</div>
+            </div>
+            <div class="cart-controls">
+              <button class="btn-qty" onclick="updateQuantity(${item.id}, -1)">-</button>
+              <span>${item.quantity}</span>
+              <button class="btn-qty" onclick="updateQuantity(${item.id}, 1)">+</button>
+            </div>
+          </div>
+        `).join('');
+        checkoutBtn.disabled = false;
+      }
 
-                window.speechSynthesis.speak(utterance);
-            }
-        }
-    </script>
+      // Financial calculations
+      const subtotal = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+      const tax = subtotal * TAX_RATE;
+      const total = subtotal + tax;
 
+      document.getElementById('subtotalAmount').innerText = `$${subtotal.toFixed(2)}`;
+      document.getElementById('taxAmount').innerText = `$${tax.toFixed(2)}`;
+      document.getElementById('totalAmount').innerText = `$${total.toFixed(2)}`;
+    }
+
+    // Trigger Sale Checkout
+    function processCheckout() {
+      const total = document.getElementById('totalAmount').innerText;
+      document.getElementById('modalTotal').innerText = total;
+      document.getElementById('receiptModal').style.display = 'flex';
+    }
+
+    // Reset Cart for New Sale
+    function closeModal() {
+      cart = [];
+      updateCartDisplay();
+      document.getElementById('receiptModal').style.display = 'none';
+    }
+
+    // Initial Load
+    renderProducts();
+  </script>
 </body>
 </html>
