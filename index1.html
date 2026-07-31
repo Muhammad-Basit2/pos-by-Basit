@@ -250,6 +250,15 @@
     </div>
   </div>
 
+  <div class="add-product-form" style="margin-top: 20px; background: #fff; padding: 15px; border-radius: 8px;">
+  <h3>Add New Product</h3>
+  <div style="display: flex; gap: 10px; margin-top: 10px;">
+    <input type="text" id="newProductName" placeholder="Item Name" style="padding: 8px; flex: 2;">
+    <input type="number" id="newProductPrice" placeholder="Price ($)" step="0.01" style="padding: 8px; flex: 1;">
+    <button onclick="addNewProductFromForm()" style="padding: 8px 15px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer;">Add</button>
+  </div>
+</div>
+
   <!-- Receipt Modal -->
   <div class="modal" id="receiptModal">
     <div class="modal-content">
@@ -269,7 +278,8 @@
       { id: 5, name: 'Muffin', price: 3.00 },
       { id: 6, name: 'Tea', price: 2.50 },
       { id: 7, name: 'Water Bottle', price: 1.50 },
-      { id: 8, name: 'Salad', price: 7.50 }
+      { id: 8, name: 'Salad', price: 7.50 },
+      {id : 9, name: 'CoolDrink', price:5.00}
     ];
 
     let cart = [];
@@ -358,6 +368,48 @@
       updateCartDisplay();
       document.getElementById('receiptModal').style.display = 'none';
     }
+
+    function addProduct(name, price) {
+  // Simple ID generation based on array length
+  const newProduct = {
+    id: products.length + 1,
+    name: name,
+    price: parseFloat(price)
+  };
+  
+  // Push to the array and refresh the UI grid
+  products.push(newProduct);
+  renderProducts();
+}
+
+function addNewProductFromForm() {
+  const nameInput = document.getElementById('newProductName');
+  const priceInput = document.getElementById('newProductPrice');
+
+  const name = nameInput.value.trim();
+  const price = parseFloat(priceInput.value);
+
+  if (!name || isNaN(price) || price <= 0) {
+    alert('Please enter a valid product name and price.');
+    return;
+  }
+
+  const newProduct = {
+    id: Date.now(), // Unique ID using timestamp
+    name: name,
+    price: price
+  };
+
+  products.push(newProduct);
+  renderProducts(); // Re-renders grid automatically
+
+  // Reset form inputs
+  nameInput.value = '';
+  priceInput.value = '';
+}
+
+// Example Usage:
+// addProduct('Bagel', 3.25);
 
     // Initial Load
     renderProducts();
