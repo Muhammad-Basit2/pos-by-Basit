@@ -5,100 +5,61 @@
 }
 
 body {
-    background: #dcc2ec;
+    background: #f7e9e9;
 }
 
-
-@keyframes myAnimation {
-  0%   {background-color:red; left:0px; top:0px;}
-  25%  {background-color:yellow; left:200px; top:0px;}
-  50%  {background-color:blue; left:200px; top:200px;}
-  75%  {background-color:green; left:0px; top:200px;}
-  100% {background-color:red; left:0px; top:0px;}
-}
-
-.head {
+.Navbar {
+    width: 100%;
     display: flex;
-    justify-content: space-between;
+    justify-content: space-around;
     align-items: center;
-    margin: 10px;
+}
+.home{
+    
+    text-decoration: none;
+}
+.mens{
+    text-decoration: none;
+}
+.womens{
+    text-decoration: none;
+}
+.Contact{
+    text-decoration: none;
 }
 
-.subheader {
+.pages {
+    width: 60%;
+}
+
+.pages,
+nav {
+    gap: 77px;
     display: flex;
-    justify-content: space-between;
     align-items: center;
-    margin-left: 6rem;
-    margin-right: 6rem;
+    justify-content: space-around;
 }
 
-#invoice {
-    font-size: xx-large;
-}
-
-.myschool {
-    background: #ff0000;
+.Search-btn {
+    font-size: x-large;
+    background-color: transparent;
+    border: none;
 
 }
 
-.myteacher {
-    background: rgb(251, 251, 246);
-    text-align: center;
-    color: blue;
+.Search-input {
+    background: transparent;
+    padding: 12px;
+    margin: 12px;
+    border-radius: 12px;
+    box-shadow: 3px 3px 15px black;
+    border: none;
+
 }
 
-.room {
-    width: 12rem;
-    height: 12rem;
-    background: red;
-    box-shadow: 5px 13px 15px #00ff7b;
-}
-
-.btn {
-    font-size: xx-large;
-    width: 12rem;
-    height: 6rem;
-    border: #00ff7b;
-    border-radius: 6px;
-    background: blueviolet;
-    color: antiquewhite;
-    box-shadow: 5px 5px 5px black;
-    cursor: pointer;
+.search {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin: .5rem;
-    padding: .5rem;
-    position: relative;
-    animation-name: myAnimation;
-    animation-duration: 5s;
-}
-
-.btn:hover {
-    background-color: #2980b9;
-    width: 11rem;
-    height: 5rem;
-    animation-name: myAnimation;
-    animation-duration:5s;
-}
-.btn-container{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-table, th, td {
-  border: 1px solid black;    /* Adds a solid border to all elements */
-  border-collapse: collapse;  /* Merges double borders into a single clean line */
-  padding: 10px;              /* Adds breathing room inside each cell */
-}
-.table{
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-#submit{
-    width: 12rem;
-    height: 14rem;
-
+    gap: 2px;
 }
