@@ -75,4 +75,26 @@ nav {
     width: 6rem;
     height: 4rem;
     box-shadow:7px 6px 5px black;
+    
+}
+
+/* 1. Define the animation on the button */
+.btn {
+  animation: pulse-glow 2s infinite ease-in-out;
+}
+
+/* 2. Create the timeline */
+@keyframes pulse-glow {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0.7);
+  }
+  70% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(0, 123, 255, 0);
+  }
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
+  }
 }
