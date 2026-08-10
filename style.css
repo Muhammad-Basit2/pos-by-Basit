@@ -98,3 +98,19 @@ nav {
     box-shadow: 0 0 0 0 rgba(0, 123, 255, 0);
   }
 }
+.buttonz{
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 7rem;
+
+}
+
+.header{
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+}
+.title{
+    font-size: xx-large;
+}
