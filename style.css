@@ -137,3 +137,10 @@ nav {
     box-shadow: 5px 5px 15px black;
 
 }
+.cards{
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    flex-wrap: wrap;
+    
+}
