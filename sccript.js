@@ -1,10 +1,8 @@
-let age;
-age = "24";
-console.log(age);
+var a = confirm('Are you men?')
 
-let className;
-className = "12th";
-console.log(className);
+console.log(a)
 
-const studentName = Basit;
-console.log(studentName);
+var b = prompt 
+('enter you name')
+
+console.log(b);
