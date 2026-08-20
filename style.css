@@ -13,22 +13,21 @@ body {
     overflow: hidden;
 }
 
-/* --- Navbar (Preserved) --- */
+/* Navbar Style */
 .pos-navbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    background-color: #1e293b;
+    background-color: #064e3b; /* Pakistani Emerald Green Theme */
     padding: 0.75rem 1.5rem;
     color: #ffffff;
     box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    flex-shrink: 0;
 }
 
 .pos-brand {
     font-size: 1.25rem;
     font-weight: 700;
-    color: #38bdf8;
+    color: #34d399;
 }
 
 .pos-menu {
@@ -38,31 +37,26 @@ body {
 }
 
 .pos-menu a {
-    color: #94a3b8;
+    color: #a7f3d0;
     text-decoration: none;
     padding: 0.5rem 1rem;
     border-radius: 6px;
     font-weight: 500;
 }
 
-.pos-menu a:hover {
+.pos-menu a:hover, .pos-menu a.active {
     color: #ffffff;
-    background-color: #334155;
-}
-
-.pos-menu a.active {
-    color: #ffffff;
-    background-color: #2563eb;
+    background-color: #047857;
 }
 
 .pos-controls {
     display: flex;
     align-items: center;
-    gap: 1.25rem;
+    gap: 1rem;
 }
 
 .status-badge {
-    background-color: #059669;
+    background-color: #10b981;
     color: #ffffff;
     font-size: 0.75rem;
     padding: 0.25rem 0.6rem;
@@ -70,15 +64,13 @@ body {
     font-weight: 600;
 }
 
-.register-info {
-    font-size: 0.875rem;
-    color: #cbd5e1;
+.register-info, .user-profile {
+    font-size: 0.85rem;
+    color: #ecfdf5;
 }
 
 .user-profile {
-    font-size: 0.875rem;
-    font-weight: 600;
-    background-color: #334155;
+    background-color: #047857;
     padding: 0.4rem 0.8rem;
     border-radius: 6px;
 }
@@ -93,7 +85,7 @@ body {
     font-weight: 600;
 }
 
-/* --- Terminal Main Grid Layout --- */
+/* Main Layout */
 .pos-terminal-container {
     display: grid;
     grid-template-columns: 1fr 400px;
@@ -102,7 +94,6 @@ body {
     height: calc(100vh - 57px);
 }
 
-/* Catalog Section */
 .catalog-section {
     display: flex;
     flex-direction: column;
@@ -126,8 +117,8 @@ body {
 }
 
 .search-input:focus {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    border-color: #059669;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
 }
 
 .category-pills {
@@ -148,12 +139,12 @@ body {
 }
 
 .pill.active, .pill:hover {
-    background-color: #1e293b;
+    background-color: #064e3b;
     color: #ffffff;
-    border-color: #1e293b;
+    border-color: #064e3b;
 }
 
-/* Product Cards Grid */
+/* Product Cards */
 .product-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -166,19 +157,18 @@ body {
     background-color: #ffffff;
     border: 1px solid #e2e8f0;
     border-radius: 8px;
-    padding: 1.25rem 1rem;
+    padding: 1rem;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    height: 120px;
+    height: 110px;
     cursor: pointer;
-    transition: transform 0.1s ease, box-shadow 0.1s ease;
+    transition: transform 0.1s ease, border-color 0.1s ease;
 }
 
 .product-card:hover {
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    border-color: #2563eb;
+    border-color: #059669;
 }
 
 .product-name {
@@ -189,11 +179,11 @@ body {
 
 .product-price {
     font-weight: 700;
-    color: #2563eb;
-    font-size: 1.1rem;
+    color: #059669;
+    font-size: 1.05rem;
 }
 
-/* Cart Section */
+/* Cart Styles */
 .cart-section {
     background-color: #ffffff;
     border-radius: 8px;
@@ -209,10 +199,6 @@ body {
     align-items: center;
     padding-bottom: 0.75rem;
     border-bottom: 1px solid #e2e8f0;
-}
-
-.cart-header h3 {
-    color: #0f172a;
 }
 
 .btn-clear {
@@ -233,6 +219,13 @@ body {
     gap: 0.75rem;
 }
 
+.empty-cart-msg {
+    text-align: center;
+    color: #94a3b8;
+    margin-top: 3rem;
+    font-style: italic;
+}
+
 .cart-item {
     display: flex;
     justify-content: space-between;
@@ -244,11 +237,13 @@ body {
 .item-info {
     display: flex;
     flex-direction: column;
+    width: 40%;
 }
 
 .item-name {
     font-weight: 600;
     color: #334155;
+    font-size: 0.9rem;
 }
 
 .item-unit-price {
@@ -275,9 +270,10 @@ body {
 .item-total {
     font-weight: 700;
     color: #0f172a;
+    font-size: 0.9rem;
 }
 
-/* Summary & Checkout */
+/* Summary & Buttons */
 .cart-summary {
     border-top: 2px solid #f1f5f9;
     padding-top: 0.75rem;
@@ -311,19 +307,57 @@ body {
     padding: 0.8rem;
     border: none;
     border-radius: 6px;
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 700;
     cursor: pointer;
     color: #ffffff;
 }
 
-.btn-cash {
-    background-color: #16a34a;
+.btn-cash { background-color: #16a34a; }
+.btn-card { background-color: #0284c7; }
+
+/* Modal Receipt */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top:0; left:0; width:100%; height:100%;
+    background: rgba(0, 0, 0, 0.5);
+    justify-content: center;
+    align-items: center;
 }
 
-.btn-card {
-    background-color: #2563eb;
+.receipt-card {
+    background: #fff;
+    width: 320px;
+    padding: 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
 }
 
-.btn-cash:hover { background-color: #15803d; }
-.btn-card:hover { background-color: #1d4ed8; }
+.receipt-card h2 {
+    text-align: center;
+    color: #064e3b;
+}
+
+.receipt-details {
+    margin: 1rem 0;
+    font-size: 0.85rem;
+}
+
+.receipt-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+}
+
+.btn-close-modal {
+    width: 100%;
+    padding: 0.6rem;
+    background-color: #064e3b;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    font-weight: 700;
+    cursor: pointer;
+    margin-top: 1rem;
+}

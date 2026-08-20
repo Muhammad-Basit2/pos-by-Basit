@@ -3,13 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>POS Terminal - QuickPOS</title>
+    <title>PakPOS Terminal</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
+    <!-- Header Navigation Bar -->
     <nav class="pos-navbar">
-        <div class="pos-brand">⚡ QuickPOS</div>
+        <div class="pos-brand">⚡ PakPOS</div>
         <ul class="pos-menu">
             <li><a href="#" class="active">Terminal</a></li>
             <li><a href="#">Orders</a></li>
@@ -19,118 +20,80 @@
         </ul>
         <div class="pos-controls">
             <span class="status-badge">Online</span>
-            <span class="register-info">Reg #01</span>
-            <div class="user-profile">👤 Cashier</div>
+            <span class="register-info">Counter #01</span>
+            <div class="user-profile">👤 Cashier (Ali)</div>
             <button class="btn-logout">Exit</button>
         </div>
     </nav>
 
+    <!-- POS Terminal Main Grid -->
     <div class="pos-terminal-container">
         
+        <!-- Left Section: Catalog & Search -->
         <section class="catalog-section">
             <div class="catalog-header">
-                <input type="text" class="search-input" placeholder="Search product or scan barcode (F2)...">
+                <input type="text" id="searchInput" class="search-input" placeholder="Search item or item code (F2)...">
                 <div class="category-pills">
-                    <button class="pill active">All Items</button>
-                    <button class="pill">Beverages</button>
-                    <button class="pill">Snacks</button>
-                    <button class="pill">Bakery</button>
-                    <button class="pill">Produce</button>
+                    <button class="pill active" onclick="filterCategory('all', this)">All Items</button>
+                    <button class="pill" onclick="filterCategory('beverages', this)">Beverages</button>
+                    <button class="pill" onclick="filterCategory('snacks', this)">Snacks</button>
+                    <button class="pill" onclick="filterCategory('bakery', this)">Bakery</button>
+                    <button class="pill" onclick="filterCategory('grocery', this)">Grocery</button>
                 </div>
             </div>
 
-            <div class="product-grid">
-                <div class="product-card">
-                    <div class="product-name">Espresso</div>
-                    <div class="product-price">$3.50</div>
-                </div>
-                <div class="product-card">
-                    <div class="product-name">Iced Latte</div>
-                    <div class="product-price">$4.75</div>
-                </div>
-                <div class="product-card">
-                    <div class="product-name">Croissant</div>
-                    <div class="product-price">$3.00</div>
-                </div>
-                <div class="product-card">
-                    <div class="product-name">Chocolate Muffin</div>
-                    <div class="product-price">$2.50</div>
-                </div>
-                <div class="product-card">
-                    <div class="product-name">Club Sandwich</div>
-                    <div class="product-price">$6.50</div>
-                </div>
-                <div class="product-card">
-                    <div class="product-name">Orange Juice</div>
-                    <div class="product-price">$4.00</div>
-                </div>
-                <div class="product-card">
-                    <div class="product-name">Green Tea</div>
-                    <div class="product-price">$3.25</div>
-                </div>
-                <div class="product-card">
-                    <div class="product-name">Bagel with Cream Cheese</div>
-                    <div class="product-price">$4.25</div>
-                </div>
-            </div>
+            <!-- Dynamic Product Cards -->
+            <div class="product-grid" id="productGrid"></div>
         </section>
 
+        <!-- Right Section: Cart & Checkout -->
         <section class="cart-section">
             <div class="cart-header">
-                <h3>Current Order (#1042)</h3>
-                <button class="btn-clear">Clear All</button>
+                <h3>Current Order (<span id="orderId">#PK-1001</span>)</h3>
+                <button class="btn-clear" onclick="clearCart()">Clear All</button>
             </div>
 
-            <div class="cart-items">
-                <div class="cart-item">
-                    <div class="item-info">
-                        <span class="item-name">Iced Latte</span>
-                        <span class="item-unit-price">$4.75 each</span>
-                    </div>
-                    <div class="item-qty">
-                        <button class="qty-btn">-</button>
-                        <span>2</span>
-                        <button class="qty-btn">+</button>
-                    </div>
-                    <span class="item-total">$9.50</span>
-                </div>
-
-                <div class="cart-item">
-                    <div class="item-info">
-                        <span class="item-name">Croissant</span>
-                        <span class="item-unit-price">$3.00 each</span>
-                    </div>
-                    <div class="item-qty">
-                        <button class="qty-btn">-</button>
-                        <span>1</span>
-                        <button class="qty-btn">+</button>
-                    </div>
-                    <span class="item-total">$3.00</span>
-                </div>
+            <div class="cart-items" id="cartItems">
+                <div class="empty-cart-msg">No items added to bill</div>
             </div>
 
             <div class="cart-summary">
                 <div class="summary-row">
                     <span>Subtotal</span>
-                    <span>$12.50</span>
+                    <span id="subtotalText">Rs. 0</span>
                 </div>
                 <div class="summary-row">
-                    <span>Tax (8%)</span>
-                    <span>$1.00</span>
+                    <span>GST (18%)</span>
+                    <span id="taxText">Rs. 0</span>
                 </div>
                 <div class="summary-row total-row">
-                    <span>Total</span>
-                    <span>$13.50</span>
+                    <span>Total Bill</span>
+                    <span id="totalText">Rs. 0</span>
                 </div>
             </div>
 
             <div class="checkout-actions">
-                <button class="btn-pay btn-cash">💵 Cash</button>
-                <button class="btn-pay btn-card">💳 Card</button>
+                <button class="btn-pay btn-cash" onclick="checkout('Cash')">💵 Cash</button>
+                <button class="btn-pay btn-card" onclick="checkout('Card / 1Link')">💳 Card / 1Link</button>
             </div>
         </section>
 
     </div>
 
+    <!-- Receipt Modal -->
+    <div class="modal-overlay" id="receiptModal">
+        <div class="receipt-card">
+            <h2>⚡ PakPOS Store</h2>
+            <p style="font-size: 0.8rem; text-align: center; color: #64748b;">Main Market, Gulberg, Lahore</p>
+            <p style="font-size: 0.8rem; text-align: center; color: #64748b; margin-bottom: 1rem;">GST Reg: 327787654321</p>
+            <hr>
+            <div class="receipt-details" id="receiptDetails"></div>
+            <hr>
+            <div id="receiptSummary"></div>
+            <button class="btn-close-modal" onclick="closeModal()">Complete Sale</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
 </body>
 </html>
