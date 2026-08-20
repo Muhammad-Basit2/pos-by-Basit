@@ -1,174 +1,136 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Perfum-Brand</title>
+    <title>POS Terminal - QuickPOS</title>
     <link rel="stylesheet" href="style.css">
 </head>
-
 <body>
-    <div class="Navbar">
-        <div>
-            <h3 style="font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-                Perfum Brand
-            </h3>
+
+    <nav class="pos-navbar">
+        <div class="pos-brand">⚡ QuickPOS</div>
+        <ul class="pos-menu">
+            <li><a href="#" class="active">Terminal</a></li>
+            <li><a href="#">Orders</a></li>
+            <li><a href="#">Inventory</a></li>
+            <li><a href="#">Customers</a></li>
+            <li><a href="#">Reports</a></li>
+        </ul>
+        <div class="pos-controls">
+            <span class="status-badge">Online</span>
+            <span class="register-info">Reg #01</span>
+            <div class="user-profile">👤 Cashier</div>
+            <button class="btn-logout">Exit</button>
         </div>
-        <div class="pages">
-            <nav>
-                <a class="home" href="Home">Home <svg class="home" xmlns="http://www.w3.org/2000/svg" height="24px"
-                        viewBox="0 -960 960 960" width="24px" fill="#e3e3e3">
-                        <path
-                            d="M240-200h120v-240h240v240h120v-360L480-740 240-560v360Zm-80 80v-480l320-240 320 240v480H520v-240h-80v240H160Zm320-350Z" />
-                    </svg></a>
-                <a class="mens" href="Mens">Men</a>
-                <a class="womens" href="women.html">Women</a>
-                <a class="Contact" href="Contact">Contact Us</a>
-            </nav>
-        </div>
-        <div class="search">
-            <input class="Search-input" type="text" placeholder="Search">
-            <button class="Search-btn">🔍</button>
-        </div>
+    </nav>
+
+    <div class="pos-terminal-container">
+        
+        <section class="catalog-section">
+            <div class="catalog-header">
+                <input type="text" class="search-input" placeholder="Search product or scan barcode (F2)...">
+                <div class="category-pills">
+                    <button class="pill active">All Items</button>
+                    <button class="pill">Beverages</button>
+                    <button class="pill">Snacks</button>
+                    <button class="pill">Bakery</button>
+                    <button class="pill">Produce</button>
+                </div>
+            </div>
+
+            <div class="product-grid">
+                <div class="product-card">
+                    <div class="product-name">Espresso</div>
+                    <div class="product-price">$3.50</div>
+                </div>
+                <div class="product-card">
+                    <div class="product-name">Iced Latte</div>
+                    <div class="product-price">$4.75</div>
+                </div>
+                <div class="product-card">
+                    <div class="product-name">Croissant</div>
+                    <div class="product-price">$3.00</div>
+                </div>
+                <div class="product-card">
+                    <div class="product-name">Chocolate Muffin</div>
+                    <div class="product-price">$2.50</div>
+                </div>
+                <div class="product-card">
+                    <div class="product-name">Club Sandwich</div>
+                    <div class="product-price">$6.50</div>
+                </div>
+                <div class="product-card">
+                    <div class="product-name">Orange Juice</div>
+                    <div class="product-price">$4.00</div>
+                </div>
+                <div class="product-card">
+                    <div class="product-name">Green Tea</div>
+                    <div class="product-price">$3.25</div>
+                </div>
+                <div class="product-card">
+                    <div class="product-name">Bagel with Cream Cheese</div>
+                    <div class="product-price">$4.25</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="cart-section">
+            <div class="cart-header">
+                <h3>Current Order (#1042)</h3>
+                <button class="btn-clear">Clear All</button>
+            </div>
+
+            <div class="cart-items">
+                <div class="cart-item">
+                    <div class="item-info">
+                        <span class="item-name">Iced Latte</span>
+                        <span class="item-unit-price">$4.75 each</span>
+                    </div>
+                    <div class="item-qty">
+                        <button class="qty-btn">-</button>
+                        <span>2</span>
+                        <button class="qty-btn">+</button>
+                    </div>
+                    <span class="item-total">$9.50</span>
+                </div>
+
+                <div class="cart-item">
+                    <div class="item-info">
+                        <span class="item-name">Croissant</span>
+                        <span class="item-unit-price">$3.00 each</span>
+                    </div>
+                    <div class="item-qty">
+                        <button class="qty-btn">-</button>
+                        <span>1</span>
+                        <button class="qty-btn">+</button>
+                    </div>
+                    <span class="item-total">$3.00</span>
+                </div>
+            </div>
+
+            <div class="cart-summary">
+                <div class="summary-row">
+                    <span>Subtotal</span>
+                    <span>$12.50</span>
+                </div>
+                <div class="summary-row">
+                    <span>Tax (8%)</span>
+                    <span>$1.00</span>
+                </div>
+                <div class="summary-row total-row">
+                    <span>Total</span>
+                    <span>$13.50</span>
+                </div>
+            </div>
+
+            <div class="checkout-actions">
+                <button class="btn-pay btn-cash">💵 Cash</button>
+                <button class="btn-pay btn-card">💳 Card</button>
+            </div>
+        </section>
+
     </div>
-    <main>
-        <section>
-            <div class="header">
-                <div class="title">
-                    <h1>
-                        Lorem, ipsum dolor.
-                    </h1>
-                    <p>
-                        Lorem ipsum dolor sit amet consectetur adipisicing elit. <br> Ea illum vel earum corrupti
-                        temporibus eveniet.
-                    </p>
-                </div>
-                <div>
-                    <img class="images" width="645px"
-                        src="https://images.unsplash.com/photo-1593487568720-92097fb460fb?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                        alt="heropic">
-                </div>
-            </div>
-            <div class="buttonz">
-                <button class="btn">Oder Now</button>
-                <button class="btn">Add to Cart</button>
-            </div>
-        </section>
-        <section class="cards">
 
-            <div class="products">
-                <img class="images"
-                    src="https://images.unsplash.com/photo-1593487568720-92097fb460fb?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                    alt="">
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas, in sint! Officia! Lorem ipsum
-                    dolor sit amet consectetur adipisicing elit. Commodi possimus in a eaque totam unde repudiandae
-                    architecto voluptate dolore voluptatibus expedita nihil ut repellendus blanditiis officiis, mollitia
-                    exercitationem veritatis iure facere! Quod exercitationem ab non.
-                </p>
-                <div>
-                    <button class="btn">Oder Now</button>
-                    <button class="btn">Add to Cart</button>
-                </div>
-            </div>
-            <div class="products">
-                <img class="images"
-                    src="https://images.unsplash.com/photo-1593487568720-92097fb460fb?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                    alt="">
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas, in sint! Officia! Lorem ipsum
-                    dolor sit amet consectetur adipisicing elit. Commodi possimus in a eaque totam unde repudiandae
-                    architecto voluptate dolore voluptatibus expedita nihil ut repellendus blanditiis officiis, mollitia
-                    exercitationem veritatis iure facere! Quod exercitationem ab non.
-                </p>
-                <div>
-                    <button class="btn">Oder Now</button>
-                    <button class="btn">Add to Cart</button>
-                </div>
-            </div>
-            <div class="products">
-                <img class="images"
-                    src="https://images.unsplash.com/photo-1593487568720-92097fb460fb?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                    alt="">
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas, in sint! Officia! Lorem ipsum
-                    dolor sit amet consectetur adipisicing elit. Commodi possimus in a eaque totam unde repudiandae
-                    architecto voluptate dolore voluptatibus expedita nihil ut repellendus blanditiis officiis, mollitia
-                    exercitationem veritatis iure facere! Quod exercitationem ab non.
-                </p>
-                <div>
-                    <button class="btn">Oder Now</button>
-                    <button class="btn">Add to Cart</button>
-                </div>
-            </div>
-            <div class="products">
-                <img class="images"
-                    src="https://images.unsplash.com/photo-1593487568720-92097fb460fb?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                    alt="">
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas, in sint! Officia! Lorem ipsum
-                    dolor sit amet consectetur adipisicing elit. Commodi possimus in a eaque totam unde repudiandae
-                    architecto voluptate dolore voluptatibus expedita nihil ut repellendus blanditiis officiis, mollitia
-                    exercitationem veritatis iure facere! Quod exercitationem ab non.
-                </p>
-                <div>
-                    <button class="btn">Oder Now</button>
-                    <button class="btn">Add to Cart</button>
-                </div>
-            </div>
-            <div class="products">
-                <img class="images"
-                    src="https://images.unsplash.com/photo-1593487568720-92097fb460fb?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                    alt="">
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas, in sint! Officia! Lorem ipsum
-                    dolor sit amet consectetur adipisicing elit. Commodi possimus in a eaque totam unde repudiandae
-                    architecto voluptate dolore voluptatibus expedita nihil ut repellendus blanditiis officiis, mollitia
-                    exercitationem veritatis iure facere! Quod exercitationem ab non.
-                </p>
-                <div>
-                    <button class="btn">Oder Now</button>
-                    <button class="btn">Add to Cart</button>
-                </div>
-            </div>
-            <div class="products">
-                <img class="images"
-                    src="https://images.unsplash.com/photo-1593487568720-92097fb460fb?q=80&w=1470&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
-                    alt="">
-                <p>
-                    Lorem ipsum dolor sit amet, consectetur adipisicing elit. Voluptas, in sint! Officia! Lorem ipsum
-                    dolor sit amet consectetur adipisicing elit. Commodi possimus in a eaque totam unde repudiandae
-                    architecto voluptate dolore voluptatibus expedita nihil ut repellendus blanditiis officiis, mollitia
-                    exercitationem veritatis iure facere! Quod exercitationem ab non.
-                </p>
-                <div>
-                    <button class="btn">Oder Now</button>
-                    <button class="btn">Add to Cart</button>
-                </div>
-            </div>
-        </section>
-
-    </main>
-    <footer>
-        <hr>
-        <div>
-            <h3>
-                <a class="about" href="">About US </a>
-                <a href="">Contact US</a>
-                <a href="Review.html">Review</a>
-                <a href=""></a>
-
-            </h3>
-
-        </div>
-        <div class="search">
-            <input class="Search-input" type="text" placeholder="Search">
-            <button class="Search-btn">🔍</button>
-            <a href="Review.html">Review</a>
-        </div>
-    </footer>
-    <script src="sccript.js"></script>
 </body>
-
 </html>

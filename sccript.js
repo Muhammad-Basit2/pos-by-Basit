@@ -6,3 +6,4 @@ var b = prompt
 ('enter you name')
 
 console.log(b);
+ 
