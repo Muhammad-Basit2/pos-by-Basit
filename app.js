@@ -89,8 +89,7 @@ const normalizeToStandardUnit = (qty, unit) => {
   return parsedQty;
 };
 
-const triggerPrintInvoice = (saleData) => {
-  const printWindow = window.open("", "_blank", "width=400,height=600");
+const populatePrintWindowContent = (printWindow, saleData) => {
   if (!printWindow) return;
 
   const itemsHtml = saleData.items.map(item => `
@@ -100,6 +99,7 @@ const triggerPrintInvoice = (saleData) => {
     </tr>
   `).join("");
 
+  printWindow.document.open();
   printWindow.document.write(`
     <html>
       <head>
@@ -226,7 +226,6 @@ const loadUserProfileAndBusiness = async () => {
     if (shopElem) shopElem.innerText = currentBusiness.shopName || "My Store";
     if (roleElem) roleElem.innerText = userData.role || "Admin";
 
-    // Fill Settings UI
     const setShopName = document.getElementById("set-shop-name");
     const setShopPhone = document.getElementById("set-shop-phone");
     const setShopAddress = document.getElementById("set-shop-address");
@@ -276,7 +275,6 @@ const navigateTo = (pageId) => {
     title.innerText = titles[pageId] || "Dashboard";
   }
 
-  // Close Mobile Drawer
   document.getElementById("sidebar")?.classList.remove("open");
   document.getElementById("sidebar-overlay")?.classList.remove("open");
 };
@@ -292,7 +290,6 @@ const initNavigation = () => {
 
   document.getElementById("quick-pos-btn")?.addEventListener("click", () => navigateTo("pos"));
 
-  // Mobile Drawer
   const hamburger = document.getElementById("mobile-hamburger");
   const closeBtn = document.getElementById("sidebar-close-btn");
   const overlay = document.getElementById("sidebar-overlay");
@@ -313,7 +310,6 @@ const initNavigation = () => {
     overlay?.classList.remove("open");
   });
 
-  // Dark Mode Switcher
   const themeToggle = document.getElementById("theme-toggle");
   themeToggle?.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
@@ -325,13 +321,11 @@ const initNavigation = () => {
 };
 
 const initAppListeners = () => {
-  // Inventory Filtering
   const catFilter = document.getElementById("product-category-filter");
   const prodSearch = document.getElementById("product-search-input");
   if (catFilter) catFilter.addEventListener("change", renderProductsTable);
   if (prodSearch) prodSearch.addEventListener("input", renderProductsTable);
 
-  // POS Filtering
   const posSearch = document.getElementById("pos-search");
   const posCatSelect = document.getElementById("pos-category-filter");
   if (posSearch) {
@@ -348,7 +342,6 @@ const initAppListeners = () => {
     });
   }
 
-  // POS Inputs
   document.getElementById("pos-discount-input")?.addEventListener("input", calculateCartTotals);
   document.getElementById("pos-tax-input")?.addEventListener("input", calculateCartTotals);
   document.getElementById("pos-paid-amount")?.addEventListener("input", calculateCartTotals);
@@ -357,7 +350,6 @@ const initAppListeners = () => {
     renderCart();
   });
 
-  // Settings Save Form
   document.getElementById("settings-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     toggleLoader(true, "Saving Settings...");
@@ -379,32 +371,20 @@ const initAppListeners = () => {
     }
   });
 
-  // Load Demo Data
   document.getElementById("load-demo-data-btn")?.addEventListener("click", seedDemoData);
-
-  // CSV Export Buttons
   document.getElementById("export-products-csv")?.addEventListener("click", exportProductsCSV);
   document.getElementById("export-sales-csv")?.addEventListener("click", exportSalesCSV);
-
-  // Expense Modal Button
   document.getElementById("add-expense-btn")?.addEventListener("click", openExpenseModal);
-
-  // Purchase Modal Button
   document.getElementById("new-purchase-btn")?.addEventListener("click", openPurchaseModal);
-
-  // Supplier Add Button
   document.getElementById("add-supplier-btn")?.addEventListener("click", openSupplierModal);
 
-  // Add Customer From POS
   document.getElementById("pos-add-customer-btn")?.addEventListener("click", () => {
     document.getElementById("add-customer-btn")?.click();
   });
 
-  // Report Generator
   document.getElementById("generate-report-btn")?.addEventListener("click", generateReport);
 };
 
-// Auth Form Handlers
 document.getElementById("login-form")?.addEventListener("submit", async (e) => {
   e.preventDefault();
   toggleLoader(true, "Signing in...");
@@ -580,7 +560,8 @@ const renderSalesHistoryTable = () => {
 };
 
 window.reprintInvoice = (saleObj) => {
-  triggerPrintInvoice(saleObj);
+  const printWindow = window.open("", "_blank", "width=400,height=600");
+  populatePrintWindowContent(printWindow, saleObj);
 };
 
 const renderPurchasesTable = () => {
@@ -900,6 +881,9 @@ document.getElementById("pos-checkout-btn")?.addEventListener("click", async () 
     return;
   }
 
+  // Open receipt window synchronously on user click to prevent popup blockers
+  const printWindow = window.open("", "_blank", "width=400,height=600");
+
   toggleLoader(true, "Completing Sale & Updating Stock...");
   
   try {
@@ -942,22 +926,38 @@ document.getElementById("pos-checkout-btn")?.addEventListener("click", async () 
     let generatedInvNum = "";
 
     await runTransaction(db, async (transaction) => {
+      // 1. All Reads First
+      const productDocsMap = new Map();
+      
       for (const item of saleItems) {
         const prodRef = doc(db, "products", item.productId);
         const prodDoc = await transaction.get(prodRef);
+        
         if (!prodDoc.exists()) throw new Error(`Product ${item.name} does not exist!`);
         
         const currentStock = prodDoc.data().currentStock;
         if (currentStock < item.normalizedQty) {
           throw new Error(`Insufficient stock for ${item.name}! Stock left: ${currentStock}`);
         }
+        
+        productDocsMap.set(item.productId, { ref: prodRef, stock: currentStock });
       }
 
+      let customerDocData = null;
+      let custRef = null;
+      if (balanceDue > 0 && customerId !== "WALKIN") {
+        custRef = doc(db, "customers", customerId);
+        const custDoc = await transaction.get(custRef);
+        if (custDoc.exists()) {
+          customerDocData = custDoc.data();
+        }
+      }
+
+      // 2. All Writes After Reads
       for (const item of saleItems) {
-        const prodRef = doc(db, "products", item.productId);
-        const prodDoc = await transaction.get(prodRef);
-        const newStock = prodDoc.data().currentStock - item.normalizedQty;
-        transaction.update(prodRef, { currentStock: newStock, updatedAt: serverTimestamp() });
+        const prodInfo = productDocsMap.get(item.productId);
+        const newStock = prodInfo.stock - item.normalizedQty;
+        transaction.update(prodInfo.ref, { currentStock: newStock, updatedAt: serverTimestamp() });
       }
 
       generatedInvNum = "INV-" + Math.floor(100000 + Math.random() * 900000);
@@ -981,17 +981,15 @@ document.getElementById("pos-checkout-btn")?.addEventListener("click", async () 
         createdAt: serverTimestamp()
       });
 
-      if (balanceDue > 0 && customerId !== "WALKIN") {
-        const custRef = doc(db, "customers", customerId);
-        const custDoc = await transaction.get(custRef);
-        const newBal = (custDoc.data().balance || 0) + balanceDue;
+      if (custRef && customerDocData) {
+        const newBal = (customerDocData.balance || 0) + balanceDue;
         transaction.update(custRef, { balance: newBal });
       }
     });
 
     showToast("Sale completed successfully!", "success");
     
-    triggerPrintInvoice({
+    const saleReceiptData = {
       invoiceNumber: generatedInvNum,
       customerName,
       items: saleItems,
@@ -1002,7 +1000,9 @@ document.getElementById("pos-checkout-btn")?.addEventListener("click", async () 
       paidAmount,
       balanceDue,
       paymentMethod
-    });
+    };
+
+    populatePrintWindowContent(printWindow, saleReceiptData);
 
     state.cart = [];
     if (document.getElementById("pos-discount-input")) document.getElementById("pos-discount-input").value = 0;
@@ -1010,6 +1010,7 @@ document.getElementById("pos-checkout-btn")?.addEventListener("click", async () 
     renderCart();
 
   } catch (err) {
+    if (printWindow) printWindow.close();
     showToast(err.message, "error");
   } finally {
     toggleLoader(false);
