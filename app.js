@@ -89,15 +89,175 @@ const normalizeToStandardUnit = (qty, unit) => {
   return parsedQty;
 };
 
-const populatePrintWindowContent = (printWindow, saleData) => {
+const populatePrintWindowContent = (printWindow, saleData, format = 'thermal', autoPrint = true) => {
   if (!printWindow) return;
 
+  const subtotalForCalc = saleData.subtotal || 0;
+
+  const itemsHtmlSimple = saleData.items.map((item, idx) => {
+    return `
+      <tr>
+        <td style="padding:6px 8px;">${idx + 1}</td>
+        <td style="padding:6px 8px;">${item.name}</td>
+        <td style="padding:6px 8px; text-align:right;">${formatCurrency(item.sellingPrice)}</td>
+        <td style="padding:6px 8px; text-align:center;">${item.qty}</td>
+        <td style="padding:6px 8px; text-align:center;">${subtotalForCalc ? (((item.lineTotal || 0) / subtotalForCalc) * (saleData.taxAmount || 0)).toFixed(2) : '0.00'}</td>
+        <td style="padding:6px 8px; text-align:right;">${formatCurrency(item.lineTotal)}</td>
+      </tr>
+    `;
+  }).join('');
+
+  // Use the same styled template for A5 and A4, but adjust page size and max-width
+  if (format === 'A5' || format === 'A4') {
+    const pageSize = format === 'A4' ? 'A4' : 'A5';
+    const pageCss = `@page { size: ${pageSize} portrait; margin: 10mm; }`;
+
+    const containerMaxWidth = format === 'A4' ? '180mm' : '148mm';
+    const titleSize = format === 'A4' ? '36px' : '32px';
+    const shopFontSize = format === 'A4' ? '22px' : '20px';
+
+    const html = `
+      <html>
+        <head>
+          <title>Invoice - ${saleData.invoiceNumber}</title>
+          <meta charset="utf-8">
+          <style>
+            ${pageCss}
+            body { font-family: 'Georgia', 'Times New Roman', serif; color:#222; margin:0; padding:18px; display:flex; justify-content:center; }
+            .invoice-wrap { width:100%; max-width:${containerMaxWidth}; border: 1px solid #e6d9c6; padding:22px; background: linear-gradient(180deg,#fff 0%, #fcfbf8 100%); box-sizing:border-box; }
+            .inv-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
+            .logo { text-align:center; flex:1; }
+            .logo h1 { margin:0; font-size:${shopFontSize}; letter-spacing:2px; color:#b8842a; }
+            .inv-title { flex:1; }
+            .inv-title h2 { margin:0; font-size:${titleSize}; font-weight:800; letter-spacing:2px; color:#333; }
+            .inv-meta { text-align:right; flex:1; font-size:13px; color:#444; }
+
+            .boxes { display:flex; gap:12px; margin-top:14px; }
+            .box { flex:1; padding:12px; border:1px dashed #d2c3a8; background: rgba(0,0,0,0.01); }
+            .box h4{ margin:0 0 8px 0; font-size:13px; color:#b8842a; }
+            .box p{ margin:0; font-size:13px; }
+
+            table.inv-items { width:100%; border-collapse:collapse; margin-top:16px; }
+            table.inv-items thead th { border-bottom:2px solid #d2c3a8; padding:10px; text-align:left; font-size:13px; }
+            table.inv-items tbody td { border-bottom:1px solid #eee; padding:8px 10px; font-size:13px; }
+
+            .totals { width:100%; display:flex; justify-content:flex-end; margin-top:16px; }
+            .totals .right { width:360px; }
+            .totals .right .row { display:flex; justify-content:space-between; padding:8px 10px; font-size:14px; }
+            .totals .right .grand { font-weight:800; font-size:18px; border-top:2px solid #d2c3a8; padding-top:12px; }
+
+            .payment { display:flex; align-items:center; gap:16px; margin-top:20px; }
+            .signature { flex:1; }
+            .signature .sig-line { border-top:1px dashed #bdb2a0; width:260px; margin-top:28px; }
+            .payment .methods { font-size:13px; color:#444; }
+
+            .inv-footer { text-align:center; margin-top:22px; font-size:12px; color:#6b6b6b; border-top:1px solid #efe7da; padding-top:10px; }
+
+            .inv-number { font-weight:700; color:#222; }
+          </style>
+        </head>
+        <body>
+          <div class="invoice-wrap">
+            <div class="inv-header">
+              <div class="inv-title">
+                <h2>INVOICE</h2>
+              </div>
+              <div class="logo">
+                <h1>${currentBusiness?.shopName || 'PAKPOS'}</h1>
+                <div style="font-size:12px; color:#7a5f3a;">${currentBusiness?.ownerName || ''}</div>
+              </div>
+              <div class="inv-meta">
+                <div>Invoice Number: <span class="inv-number">${saleData.invoiceNumber}</span></div>
+                <div>Date: <strong>${new Date().toLocaleDateString()}</strong></div>
+              </div>
+            </div>
+
+            <div class="boxes">
+              <div class="box">
+                <h4>BILL TO</h4>
+                <p><strong>${saleData.customerName}</strong></p>
+                <p>Phone: ${(saleData.customerPhone) ? saleData.customerPhone : 'N/A'}</p>
+              </div>
+              <div class="box">
+                <h4>DATA FOR THE TRANSFER</h4>
+                <p>${currentBusiness?.shopName || ''}</p>
+                <p>Phone: ${currentBusiness?.phone || ''}</p>
+                <p>Usage: Sale ${saleData.invoiceNumber}</p>
+              </div>
+            </div>
+
+            <table class="inv-items">
+              <thead>
+                <tr>
+                  <th style="width:40px;">No</th>
+                  <th>Description</th>
+                  <th style="width:110px; text-align:right;">Price</th>
+                  <th style="width:70px; text-align:center;">Qty</th>
+                  <th style="width:90px; text-align:center;">GST</th>
+                  <th style="width:110px; text-align:right;">Amount</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${itemsHtmlSimple}
+              </tbody>
+            </table>
+
+            <div class="totals">
+              <div class="right">
+                <div class="row"><div>Subtotal</div><div>${formatCurrency(saleData.subtotal)}</div></div>
+                ${saleData.discount > 0 ? `<div class="row"><div>Discount</div><div>-${formatCurrency(saleData.discount)}</div></div>` : ''}
+                <div class="row"><div>GST</div><div>${formatCurrency(saleData.taxAmount || 0)}</div></div>
+                <div class="row grand"><div>Total</div><div>${formatCurrency(saleData.grandTotal)}</div></div>
+              </div>
+            </div>
+
+            <div class="payment">
+              <div class="signature">
+                <div>Payment Method: <strong>${saleData.paymentMethod || 'Cash'}</strong></div>
+                <div class="sig-line"></div>
+                <div style="font-size:12px; color:#7a7a7a;">Signature</div>
+              </div>
+              <div class="methods">
+                <div><strong>Paid:</strong> ${formatCurrency(saleData.paidAmount)}</div>
+                <div><strong>Balance:</strong> ${formatCurrency(saleData.balanceDue)}</div>
+              </div>
+            </div>
+
+            <div class="inv-footer">
+              <div>${currentBusiness?.address || ''} • Phone: ${currentBusiness?.phone || ''}</div>
+              <div>${currentBusiness?.invoiceFooter || ''}</div>
+            </div>
+          </div>
+          <script>${autoPrint ? "window.onload = () => { setTimeout(() => { window.print(); }, 200); };" : ""}</script>
+        </body>
+      </html>
+    `;
+
+    printWindow.document.open();
+    printWindow.document.write(html);
+    printWindow.document.close();
+    return;
+  }
+
+  // Fallback: use existing generic template for thermal/A4
   const itemsHtml = saleData.items.map(item => `
     <tr>
-      <td>${item.name} (${item.qty} ${item.unit})</td>
-      <td style="text-align: right;">${formatCurrency(item.lineTotal)}</td>
+      <td style="width:70%;">${item.name} (${item.qty} ${item.unit})</td>
+      <td style="text-align: right; width:30%;">${formatCurrency(item.lineTotal)}</td>
     </tr>
   `).join("");
+
+  // Choose CSS based on requested format
+  let pageCss = '';
+  let bodyStyle = '';
+  if (format === 'A4') {
+    pageCss = '@page { size: A4 portrait; margin: 10mm; }';
+    bodyStyle = 'width:210mm; font-family: Arial, sans-serif; font-size:12px;';
+  } else {
+    // thermal
+    pageCss = '@page { size: 80mm auto; margin: 3mm; }';
+    bodyStyle = 'width:80mm; font-family: monospace; font-size:11px;';
+  }
 
   printWindow.document.open();
   printWindow.document.write(`
@@ -105,18 +265,20 @@ const populatePrintWindowContent = (printWindow, saleData) => {
       <head>
         <title>Receipt - ${saleData.invoiceNumber}</title>
         <style>
-          body { font-family: monospace; font-size: 12px; padding: 10px; width: 280px; }
+          ${pageCss}
+          body { ${bodyStyle} padding: 6px; color: #000; }
           h2, p { text-align: center; margin: 2px 0; }
-          table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-          td { padding: 4px 0; }
+          table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+          td { padding: 4px 0; vertical-align: top; }
           .border-top { border-top: 1px dashed #000; }
           .total-row { font-weight: bold; }
+          .small { font-size: 10px; }
         </style>
       </head>
       <body>
         <h2>${currentBusiness?.shopName || "PakPOS Store"}</h2>
-        <p>${currentBusiness?.address || ""}</p>
-        <p>Phone: ${currentBusiness?.phone || "N/A"}</p>
+        <p class="small">${currentBusiness?.address || ""}</p>
+        <p class="small">Phone: ${currentBusiness?.phone || "N/A"}</p>
         <p>--------------------------------</p>
         <p>Invoice: ${saleData.invoiceNumber}</p>
         <p>Customer: ${saleData.customerName}</p>
@@ -128,7 +290,7 @@ const populatePrintWindowContent = (printWindow, saleData) => {
             <td style="text-align: right;">${formatCurrency(saleData.subtotal)}</td>
           </tr>
           ${saleData.discount > 0 ? `<tr><td>Discount:</td><td style="text-align: right;">-${formatCurrency(saleData.discount)}</td></tr>` : ''}
-          ${saleData.taxAmount > 0 ? `<tr><td>Tax:</td><td style="text-align: right;">${formatCurrency(saleData.taxAmount)}</td></tr>` : ''}
+          ${saleData.taxAmount > 0 ? `<tr><td>GST:</td><td style="text-align: right;">${formatCurrency(saleData.taxAmount)}</td></tr>` : ''}
           <tr class="total-row border-top">
             <td>Grand Total:</td>
             <td style="text-align: right;">${formatCurrency(saleData.grandTotal)}</td>
@@ -142,9 +304,10 @@ const populatePrintWindowContent = (printWindow, saleData) => {
             <td style="text-align: right;">${formatCurrency(saleData.balanceDue)}</td>
           </tr>
         </table>
-        <p style="margin-top: 15px;">Thank you for shopping!</p>
+        <p style="margin-top: 10px; text-align:center;">${currentBusiness?.invoiceFooter || 'Thank you for shopping!'}</p>
         <script>
-          window.onload = () => { window.print(); window.close(); };
+          // Auto-print on window load (user can cancel or choose printer);
+          window.onload = () => { setTimeout(() => { window.print(); }, 200); };
         <\/script>
       </body>
     </html>
@@ -350,6 +513,46 @@ const initAppListeners = () => {
     renderCart();
   });
 
+  // Print preview of current cart (without completing sale)
+  document.getElementById('pos-print-preview-btn')?.addEventListener('click', () => {
+    const format = (document.getElementById('pos-print-format')?.value) || 'thermal';
+    if (!state.cart || state.cart.length === 0) { showToast('Cart is empty', 'error'); return; }
+
+    // Build temporary saleData object from current cart for preview
+    let subtotal = 0;
+    const saleItems = state.cart.map(item => {
+      const normalizedQty = normalizeToStandardUnit(item.qty, item.unit);
+      const lineTotal = normalizedQty * item.sellingPrice;
+      subtotal += lineTotal;
+      return Object.assign({}, item, { normalizedQty, lineTotal });
+    });
+    const discount = parseFloat(document.getElementById('pos-discount-input')?.value) || 0;
+    const taxPct = parseFloat(document.getElementById('pos-tax-input')?.value) || 0;
+    const taxAmount = (subtotal - discount) * (taxPct / 100);
+    const grandTotal = Math.max(0, subtotal - discount + taxAmount);
+    const paidAmount = parseFloat(document.getElementById('pos-paid-amount')?.value) || 0;
+    const balanceDue = grandTotal > paidAmount ? grandTotal - paidAmount : 0;
+    const customerId = document.getElementById('pos-customer-select')?.value || 'WALKIN';
+    const customerObj = state.customers.find(c => c.id === customerId);
+    const customerName = customerObj ? customerObj.name : 'Walk-in Customer';
+
+    const salePreview = {
+      invoiceNumber: 'INV-' + Math.floor(1000 + Math.random() * 9000),
+      customerName,
+      items: saleItems,
+      subtotal,
+      discount,
+      taxAmount,
+      grandTotal,
+      paidAmount,
+      balanceDue,
+      paymentMethod: document.getElementById('pos-payment-method')?.value || 'Cash'
+    };
+
+    const printWindow = window.open('', '_blank', 'width=400,height=600');
+    populatePrintWindowContent(printWindow, salePreview, format, false);
+  });
+
   document.getElementById("settings-form")?.addEventListener("submit", async (e) => {
     e.preventDefault();
     toggleLoader(true, "Saving Settings...");
@@ -374,15 +577,85 @@ const initAppListeners = () => {
   document.getElementById("load-demo-data-btn")?.addEventListener("click", seedDemoData);
   document.getElementById("export-products-csv")?.addEventListener("click", exportProductsCSV);
   document.getElementById("export-sales-csv")?.addEventListener("click", exportSalesCSV);
-  document.getElementById("add-expense-btn")?.addEventListener("click", openExpenseModal);
-  document.getElementById("new-purchase-btn")?.addEventListener("click", openPurchaseModal);
-  document.getElementById("add-supplier-btn")?.addEventListener("click", openSupplierModal);
+  document.getElementById("add-expense-btn")?.addEventListener("click", () => openExpenseFormModal());
+  document.getElementById("new-purchase-btn")?.addEventListener("click", () => openPurchaseFormModal());
+  document.getElementById("add-supplier-btn")?.addEventListener("click", () => openSupplierFormModal());
+
+  const posCustSearch = document.getElementById("pos-customer-search");
+  if (posCustSearch) {
+    posCustSearch.addEventListener("input", (e) => {
+      const q = (e.target.value || "").toLowerCase();
+      const select = document.getElementById("pos-customer-select");
+      if (!select) return;
+      select.innerHTML = `<option value="WALKIN">Walk-in Customer (Grahak)</option>`;
+      state.customers.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone||'').toLowerCase().includes(q)).forEach(c => {
+        select.innerHTML += `<option value="${c.id}">${c.name} (${c.phone || 'No Phone'}) - Bal: ${formatCurrency(c.balance)}</option>`;
+      });
+    });
+  }
 
   document.getElementById("pos-add-customer-btn")?.addEventListener("click", () => {
     document.getElementById("add-customer-btn")?.click();
   });
 
   document.getElementById("generate-report-btn")?.addEventListener("click", generateReport);
+
+  // --- Mobile POS cart drawer toggle ---
+  const createMobileCartToggle = () => {
+    // Only create if not present
+    if (document.getElementById('cart-toggle-btn')) return;
+
+    const btn = document.createElement('button');
+    btn.id = 'cart-toggle-btn';
+    btn.className = 'cart-toggle-btn mobile-only';
+    btn.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Cart`;
+    document.body.appendChild(btn);
+
+    const overlay = document.createElement('div');
+    overlay.id = 'cart-overlay';
+    overlay.className = 'cart-overlay';
+    document.body.appendChild(overlay);
+
+    const posRight = document.querySelector('.pos-right');
+    if (!posRight) return;
+
+    const openCart = () => {
+      posRight.classList.add('open');
+      overlay.classList.add('open');
+    };
+    const closeCart = () => {
+      posRight.classList.remove('open');
+      overlay.classList.remove('open');
+    };
+
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      if (posRight.classList.contains('open')) closeCart();
+      else openCart();
+    });
+
+    overlay.addEventListener('click', () => closeCart());
+
+    // Close cart when navigating away from POS page
+    document.querySelectorAll('.sidebar-nav a').forEach(link => {
+      link.addEventListener('click', () => closeCart());
+    });
+
+    // Auto-show/hide based on viewport
+    const checkViewport = () => {
+      if (window.innerWidth <= 600) {
+        btn.classList.remove('hidden');
+      } else {
+        btn.classList.add('hidden');
+        closeCart();
+      }
+    };
+
+    window.addEventListener('resize', checkViewport);
+    checkViewport();
+  };
+
+  createMobileCartToggle();
 };
 
 document.getElementById("login-form")?.addEventListener("submit", async (e) => {
@@ -560,8 +833,9 @@ const renderSalesHistoryTable = () => {
 };
 
 window.reprintInvoice = (saleObj) => {
+  const format = (document.getElementById('pos-print-format')?.value) || 'thermal';
   const printWindow = window.open("", "_blank", "width=400,height=600");
-  populatePrintWindowContent(printWindow, saleObj);
+  populatePrintWindowContent(printWindow, saleObj, format, true);
 };
 
 const renderPurchasesTable = () => {
@@ -579,7 +853,10 @@ const renderPurchasesTable = () => {
       <td>${formatCurrency(p.totalAmount)}</td>
       <td>${formatCurrency(p.paidAmount)}</td>
       <td><strong class="text-red">${formatCurrency(p.balanceDue)}</strong></td>
-      <td><span class="chip">Recorded</span></td>
+      <td>
+        <button class="btn btn-sm btn-secondary" onclick="window.editPurchaseModal('${p.id}')"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="window.deletePurchase('${p.id}')"><i class="fa-solid fa-trash"></i></button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
@@ -599,11 +876,17 @@ const renderExpensesTable = () => {
       <td><span class="chip">${e.category}</span></td>
       <td><strong class="text-red">${formatCurrency(e.amount)}</strong></td>
       <td>
+        <button class="btn btn-sm btn-secondary" onclick="window.editExpenseModal('${e.id}')"><i class="fa-solid fa-pen"></i></button>
         <button class="btn btn-sm btn-danger" onclick="window.deleteExpense('${e.id}')"><i class="fa-solid fa-trash"></i></button>
       </td>
     `;
     tbody.appendChild(tr);
   });
+};
+
+window.editExpenseModal = (id) => {
+  const e = state.expenses.find(x => x.id === id);
+  if (e) openExpenseFormModal(e);
 };
 
 window.deleteExpense = async (id) => {
@@ -882,6 +1165,7 @@ document.getElementById("pos-checkout-btn")?.addEventListener("click", async () 
   }
 
   // Open receipt window synchronously on user click to prevent popup blockers
+  const format = (document.getElementById('pos-print-format')?.value) || 'thermal';
   const printWindow = window.open("", "_blank", "width=400,height=600");
 
   toggleLoader(true, "Completing Sale & Updating Stock...");
@@ -953,6 +1237,10 @@ document.getElementById("pos-checkout-btn")?.addEventListener("click", async () 
         }
       }
 
+      const invoiceCounterRef = doc(db, "businesses", businessId, "counters", "invoices");
+      const invoiceCounterDoc = await transaction.get(invoiceCounterRef);
+      const nextInvoiceSequence = (invoiceCounterDoc.exists() ? invoiceCounterDoc.data().lastNumber || 0 : 0) + 1;
+
       // 2. All Writes After Reads
       for (const item of saleItems) {
         const prodInfo = productDocsMap.get(item.productId);
@@ -960,8 +1248,14 @@ document.getElementById("pos-checkout-btn")?.addEventListener("click", async () 
         transaction.update(prodInfo.ref, { currentStock: newStock, updatedAt: serverTimestamp() });
       }
 
-      generatedInvNum = "INV-" + Math.floor(100000 + Math.random() * 900000);
+      const now = new Date();
+      const invoiceDate = [now.getFullYear(), now.getMonth() + 1, now.getDate()]
+        .map((part) => String(part).padStart(2, "0"))
+        .join("");
+      generatedInvNum = `INV-${invoiceDate}-${String(nextInvoiceSequence).padStart(4, "0")}`;
       const newSaleRef = doc(collection(db, "sales"));
+
+      transaction.set(invoiceCounterRef, { lastNumber: nextInvoiceSequence }, { merge: true });
       
       transaction.set(newSaleRef, {
         businessId,
@@ -1002,7 +1296,7 @@ document.getElementById("pos-checkout-btn")?.addEventListener("click", async () 
       paymentMethod
     };
 
-    populatePrintWindowContent(printWindow, saleReceiptData);
+    populatePrintWindowContent(printWindow, saleReceiptData, format, true);
 
     state.cart = [];
     if (document.getElementById("pos-discount-input")) document.getElementById("pos-discount-input").value = 0;
@@ -1192,7 +1486,9 @@ const renderCustomersTable = () => {
       <td>${c.cnic || 'N/A'}</td>
       <td><strong class="${c.balance > 0 ? 'text-red' : 'text-green'}">${formatCurrency(c.balance)}</strong></td>
       <td>
+        <button class="btn btn-sm btn-secondary" onclick="window.editCustomerModal('${c.id}')"><i class="fa-solid fa-pen"></i></button>
         <button class="btn btn-sm btn-accent" onclick="window.receiveCustomerPayment('${c.id}')"><i class="fa-solid fa-hand-holding-dollar"></i> Clear Udhaar</button>
+        <button class="btn btn-sm btn-danger" onclick="window.deleteCustomer('${c.id}')"><i class="fa-solid fa-trash"></i></button>
       </td>
     `;
     tbody.appendChild(tr);
@@ -1208,19 +1504,112 @@ const renderPosCustomerDropdown = () => {
   });
 };
 
-document.getElementById("add-customer-btn")?.addEventListener("click", () => {
-  const name = prompt("Enter Customer Name:");
-  if (!name) return;
-  const phone = prompt("Enter Customer Phone (+92...):");
-  
-  addDoc(collection(db, "customers"), {
-    businessId,
-    name,
-    phone: phone || "",
-    balance: 0,
-    createdAt: serverTimestamp()
-  }).then(() => showToast("Customer added!", "success"));
-});
+const openCustomerModal = (customer = null) => {
+  // keep for backward compatibility
+  if (!customer) {
+    const name = prompt("Enter Customer Name:");
+    if (!name) return;
+    const phone = prompt("Enter Customer Phone (+92...):");
+    addDoc(collection(db, "customers"), {
+      businessId,
+      name,
+      phone: phone || "",
+      balance: 0,
+      createdAt: serverTimestamp()
+    }).then(() => showToast("Customer added!", "success"));
+  } else {
+    const newName = prompt("Edit Customer Name:", customer.name) || customer.name;
+    const newPhone = prompt("Edit Customer Phone:", customer.phone || "") || customer.phone || "";
+    const newCnic = prompt("Edit CNIC (optional):", customer.cnic || "") || customer.cnic || "";
+    updateDoc(doc(db, "customers", customer.id), { name: newName, phone: newPhone, cnic: newCnic, updatedAt: serverTimestamp() })
+      .then(() => showToast("Customer updated!", "success"));
+  }
+};
+
+// New: Customer Form Modal
+const openCustomerFormModal = (customer = null) => {
+  const modalContainer = document.getElementById("modal-container");
+  const modalContent = document.getElementById("modal-content");
+  if (!modalContainer || !modalContent) return;
+
+  modalContent.innerHTML = `
+    <div class="modal-header">
+      <h3>${customer ? 'Edit Customer' : 'Add Customer'}</h3>
+      <button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="customer-form">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Full Name *</label>
+          <input type="text" id="cust-name" value="${customer ? customer.name : ''}" required>
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="text" id="cust-phone" value="${customer ? customer.phone || '' : ''}">
+        </div>
+        <div class="form-group">
+          <label>CNIC (optional)</label>
+          <input type="text" id="cust-cnic" value="${customer ? customer.cnic || '' : ''}">
+        </div>
+        <div class="form-group">
+          <label>Initial Balance (Udhaar)</label>
+          <input type="number" id="cust-balance" value="${customer ? (customer.balance||0) : 0}" step="0.01">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="window.closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Customer</button>
+      </div>
+    </form>
+  `;
+
+  modalContainer.classList.remove('hidden');
+
+  document.getElementById('customer-form').onsubmit = async (e) => {
+    e.preventDefault();
+    toggleLoader(true, customer ? 'Updating customer...' : 'Saving customer...');
+    try {
+      const data = {
+        businessId,
+        name: document.getElementById('cust-name').value,
+        phone: document.getElementById('cust-phone').value || '',
+        cnic: document.getElementById('cust-cnic').value || '',
+        balance: parseFloat(document.getElementById('cust-balance').value) || 0,
+        updatedAt: serverTimestamp()
+      };
+      if (customer) {
+        await updateDoc(doc(db, 'customers', customer.id), data);
+        showToast('Customer updated!', 'success');
+      } else {
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'customers'), data);
+        showToast('Customer added!', 'success');
+      }
+      window.closeModal();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      toggleLoader(false);
+    }
+  };
+};
+
+// wire the add customer button to the form modal
+if (document.getElementById('add-customer-btn')) {
+  document.getElementById('add-customer-btn').addEventListener('click', () => openCustomerFormModal());
+}
+
+window.editCustomerModal = (id) => {
+  const c = state.customers.find(x => x.id === id);
+  if (c) openCustomerFormModal(c);
+};
+
+window.deleteCustomer = async (id) => {
+  if (confirm("Delete customer and their udhaar record?")) {
+    await deleteDoc(doc(db, "customers", id));
+    showToast("Customer deleted.", "info");
+  }
+};
 
 window.receiveCustomerPayment = async (id) => {
   const cust = state.customers.find(c => c.id === id);
@@ -1244,65 +1633,352 @@ const renderSuppliersTable = () => {
   if (!tbody) return;
   tbody.innerHTML = "";
 
+  // Compute overall totals from purchases
+  let overallPaid = 0;
+  let overallPayable = 0;
+
+  // Build a quick lookup of purchases grouped by supplierName
+  const purchasesBySupplier = {};
+  (state.purchases || []).forEach(p => {
+    const name = (p.supplierName || '').toString();
+    if (!purchasesBySupplier[name]) purchasesBySupplier[name] = [];
+    purchasesBySupplier[name].push(p);
+  });
+
   state.suppliers.forEach(s => {
+    const company = s.companyName || '';
+    // Sum paidAmount and balanceDue for this supplier from purchases
+    const purList = purchasesBySupplier[company] || [];
+    const supplierPaid = purList.reduce((acc, curr) => acc + (curr.paidAmount || 0), 0);
+    const supplierPayable = purList.reduce((acc, curr) => acc + (curr.balanceDue || 0), 0) || (s.balance || 0);
+
+    overallPaid += supplierPaid;
+    overallPayable += supplierPayable;
+
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><strong>${s.companyName}</strong></td>
       <td>${s.contactName || 'N/A'}</td>
       <td>${s.phone || 'N/A'}</td>
-      <td>${formatCurrency(s.balance)}</td>
+      <td>${formatCurrency(supplierPaid)}</td>
+      <td><strong class="text-red">${formatCurrency(supplierPayable)}</strong></td>
+      <td>
+        <button class="btn btn-sm btn-secondary" onclick="window.editSupplierModal('${s.id}')"><i class="fa-solid fa-pen"></i></button>
+        <button class="btn btn-sm btn-danger" onclick="window.deleteSupplier('${s.id}')"><i class="fa-solid fa-trash"></i></button>
+      </td>
     `;
     tbody.appendChild(tr);
   });
+
+  // Update overall totals in the UI if present
+  const totalPaidEl = document.getElementById('suppliers-total-paid');
+  const totalPayableEl = document.getElementById('suppliers-total-payable');
+  if (totalPaidEl) totalPaidEl.innerText = formatCurrency(overallPaid);
+  if (totalPayableEl) totalPayableEl.innerText = formatCurrency(overallPayable);
 };
 
-const openSupplierModal = () => {
-  const companyName = prompt("Supplier / Company Name:");
-  if (!companyName) return;
-  const phone = prompt("Phone Number:");
-
-  addDoc(collection(db, "suppliers"), {
-    businessId,
-    companyName,
-    phone: phone || "",
-    balance: 0,
-    createdAt: serverTimestamp()
-  }).then(() => showToast("Supplier saved!", "success"));
-};
-
-const openExpenseModal = () => {
-  const title = prompt("Expense Reason (e.g. Electricity Bill, Shop Rent):");
-  if (!title) return;
-  const amount = parseFloat(prompt("Expense Amount (Rs.):"));
-  if (isNaN(amount) || amount <= 0) return;
-
-  addDoc(collection(db, "expenses"), {
-    businessId,
-    title,
-    category: "General",
-    amount,
-    createdAt: serverTimestamp()
-  }).then(() => showToast("Expense recorded!", "success"));
-};
-
-const openPurchaseModal = () => {
-  if (state.suppliers.length === 0) {
-    showToast("Please add a supplier first!", "error");
-    return;
+const openSupplierModal = (supplier = null) => {
+  // kept for backward compatibility (prompt-based)
+  if (!supplier) {
+    const companyName = prompt("Supplier / Company Name:");
+    if (!companyName) return;
+    const phone = prompt("Phone Number:");
+    addDoc(collection(db, "suppliers"), {
+      businessId,
+      companyName,
+      phone: phone || "",
+      balance: 0,
+      createdAt: serverTimestamp()
+    }).then(() => showToast("Supplier saved!", "success"));
+  } else {
+    const companyName = prompt("Supplier / Company Name:", supplier.companyName) || supplier.companyName;
+    const phone = prompt("Phone Number:", supplier.phone || "") || supplier.phone || "";
+    updateDoc(doc(db, "suppliers", supplier.id), { companyName, phone, updatedAt: serverTimestamp() })
+      .then(() => showToast("Supplier updated!", "success"));
   }
-  const suppName = state.suppliers[0].companyName;
-  const amount = parseFloat(prompt(`Enter purchase invoice total for supplier [${suppName}]:`));
-  if (isNaN(amount) || amount <= 0) return;
+};
 
-  addDoc(collection(db, "purchases"), {
-    businessId,
-    invoiceNumber: "PUR-" + Math.floor(1000 + Math.random() * 9000),
-    supplierName: suppName,
-    totalAmount: amount,
-    paidAmount: amount,
-    balanceDue: 0,
-    createdAt: serverTimestamp()
-  }).then(() => showToast("Purchase stock invoice created!", "success"));
+// New: Supplier Form Modal
+const openSupplierFormModal = async (supplier = null) => {
+  const modalContainer = document.getElementById("modal-container");
+  const modalContent = document.getElementById("modal-content");
+  if (!modalContainer || !modalContent) return;
+
+  modalContent.innerHTML = `
+    <div class="modal-header">
+      <h3>${supplier ? 'Edit Supplier' : 'Add Supplier'}</h3>
+      <button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="supplier-form">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Company Name *</label>
+          <input type="text" id="sup-company" value="${supplier ? supplier.companyName : ''}" required>
+        </div>
+        <div class="form-group">
+          <label>Contact Person</label>
+          <input type="text" id="sup-contact" value="${supplier ? supplier.contactName || '' : ''}">
+        </div>
+        <div class="form-group">
+          <label>Phone</label>
+          <input type="text" id="sup-phone" value="${supplier ? supplier.phone || '' : ''}">
+        </div>
+        <div class="form-group">
+          <label>Initial Payable Balance (Optional)</label>
+          <input type="number" id="sup-balance" value="${supplier ? (supplier.balance||0) : 0}" step="0.01">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="window.closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Supplier</button>
+      </div>
+    </form>
+  `;
+
+  modalContainer.classList.remove('hidden');
+
+  document.getElementById('supplier-form').onsubmit = async (e) => {
+    e.preventDefault();
+    toggleLoader(true, supplier ? 'Updating supplier...' : 'Saving supplier...');
+    try {
+      const data = {
+        businessId,
+        companyName: document.getElementById('sup-company').value,
+        contactName: document.getElementById('sup-contact').value || '',
+        phone: document.getElementById('sup-phone').value || '',
+        balance: parseFloat(document.getElementById('sup-balance').value) || 0,
+        updatedAt: serverTimestamp()
+      };
+      if (supplier) {
+        await updateDoc(doc(db, 'suppliers', supplier.id), data);
+        showToast('Supplier updated!', 'success');
+      } else {
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'suppliers'), data);
+        showToast('Supplier added!', 'success');
+      }
+      window.closeModal();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      toggleLoader(false);
+    }
+  };
+};
+
+window.editSupplierModal = (id) => {
+  const s = state.suppliers.find(x => x.id === id);
+  if (s) openSupplierFormModal(s);
+};
+
+window.deleteSupplier = async (id) => {
+  if (confirm("Delete supplier?")) {
+    await deleteDoc(doc(db, "suppliers", id));
+    showToast("Supplier deleted.", "info");
+  }
+};
+
+// Expense form modal
+const openExpenseFormModal = (expense = null) => {
+  const modalContainer = document.getElementById('modal-container');
+  const modalContent = document.getElementById('modal-content');
+  if (!modalContainer || !modalContent) return;
+
+  modalContent.innerHTML = `
+    <div class="modal-header">
+      <h3>${expense ? 'Edit Expense' : 'Add Expense'}</h3>
+      <button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="expense-form">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Title *</label>
+          <input type="text" id="expense-title" value="${expense ? (expense.title || '') : ''}" required>
+        </div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="expense-category">
+            <option value="General">General</option>
+            <option value="Utilities">Utilities</option>
+            <option value="Rent">Rent</option>
+            <option value="Salary">Salary</option>
+            <option value="Other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Amount (Rs.) *</label>
+          <input type="number" id="expense-amount" value="${expense ? (expense.amount||0) : ''}" required step="0.01">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="window.closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Expense</button>
+      </div>
+    </form>
+  `;
+
+  if (expense && expense.category) {
+    setTimeout(() => { const sel = document.getElementById('expense-category'); if (sel) sel.value = expense.category; }, 0);
+  }
+
+  modalContainer.classList.remove('hidden');
+
+  document.getElementById('expense-form').onsubmit = async (e) => {
+    e.preventDefault();
+    toggleLoader(true, expense ? 'Updating expense...' : 'Saving expense...');
+    try {
+      const title = document.getElementById('expense-title').value.trim();
+      const category = document.getElementById('expense-category').value;
+      const amount = parseFloat(document.getElementById('expense-amount').value) || 0;
+      if (!title || isNaN(amount) || amount <= 0) { showToast('Please provide valid title and amount', 'error'); toggleLoader(false); return; }
+
+      const data = { businessId, title, category, amount, updatedAt: serverTimestamp() };
+      if (expense) {
+        await updateDoc(doc(db, 'expenses', expense.id), data);
+        showToast('Expense updated!', 'success');
+      } else {
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'expenses'), data);
+        showToast('Expense recorded!', 'success');
+      }
+      window.closeModal();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      toggleLoader(false);
+    }
+  };
+};
+
+// keep old alias for compatibility
+const openExpenseModal = (expense = null) => openExpenseFormModal(expense);
+
+
+const openPurchaseModal = (purchase = null) => {
+  // keep for backward compatibility
+  if (!purchase) {
+    if (state.suppliers.length === 0) {
+      showToast("Please add a supplier first!", "error");
+      return;
+    }
+    const suppName = state.suppliers[0].companyName;
+    const amount = parseFloat(prompt(`Enter purchase invoice total for supplier [${suppName}]:`));
+    if (isNaN(amount) || amount <= 0) return;
+
+    addDoc(collection(db, "purchases"), {
+      businessId,
+      invoiceNumber: "PUR-" + Math.floor(1000 + Math.random() * 9000),
+      supplierName: suppName,
+      totalAmount: amount,
+      paidAmount: amount,
+      balanceDue: 0,
+      createdAt: serverTimestamp()
+    }).then(() => showToast("Purchase stock invoice created!", "success"));
+  } else {
+    const paid = parseFloat(prompt("Update paid amount:", purchase.paidAmount || 0));
+    if (isNaN(paid)) return;
+    const newBalance = Math.max(0, (purchase.totalAmount || 0) - paid);
+    updateDoc(doc(db, "purchases", purchase.id), { paidAmount: paid, balanceDue: newBalance, updatedAt: serverTimestamp() })
+      .then(() => showToast("Purchase updated!", "success"));
+  }
+};
+
+// New: Purchase Form Modal
+const openPurchaseFormModal = (purchase = null) => {
+  const modalContainer = document.getElementById('modal-container');
+  const modalContent = document.getElementById('modal-content');
+  if (!modalContainer || !modalContent) return;
+
+  // Build supplier options
+  const supplierOptions = (state.suppliers || []).map(s => `<option value="${s.id}" ${purchase && purchase.supplierId === s.id ? 'selected' : ''}>${s.companyName}</option>`).join('');
+
+  modalContent.innerHTML = `
+    <div class="modal-header">
+      <h3>${purchase ? 'Edit Purchase' : 'Record New Purchase'}</h3>
+      <button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="purchase-form">
+      <div class="modal-body">
+        <div class="form-group">
+          <label>Supplier *</label>
+          <select id="purchase-supplier" required>
+            <option value="">Select Supplier</option>
+            ${supplierOptions}
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Invoice Number</label>
+          <input type="text" id="purchase-inv" value="${purchase ? purchase.invoiceNumber : 'PUR-' + Math.floor(1000 + Math.random() * 9000)}">
+        </div>
+        <div class="form-group">
+          <label>Total Amount (Rs.) *</label>
+          <input type="number" id="purchase-total" value="${purchase ? (purchase.totalAmount||0) : ''}" required step="0.01">
+        </div>
+        <div class="form-group">
+          <label>Paid Amount (Rs.)</label>
+          <input type="number" id="purchase-paid" value="${purchase ? (purchase.paidAmount||0) : ''}" step="0.01">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="window.closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-primary">Save Purchase</button>
+      </div>
+    </form>
+  `;
+
+  modalContainer.classList.remove('hidden');
+
+  document.getElementById('purchase-form').onsubmit = async (e) => {
+    e.preventDefault();
+    toggleLoader(true, purchase ? 'Updating purchase...' : 'Saving purchase...');
+    try {
+      const supplierId = document.getElementById('purchase-supplier').value;
+      if (!supplierId) { showToast('Please select supplier', 'error'); toggleLoader(false); return; }
+      const supplier = state.suppliers.find(s => s.id === supplierId) || {};
+      const invoiceNumber = document.getElementById('purchase-inv').value || 'PUR-' + Math.floor(1000 + Math.random() * 9000);
+      const totalAmount = parseFloat(document.getElementById('purchase-total').value) || 0;
+      const paidAmount = parseFloat(document.getElementById('purchase-paid').value) || 0;
+      const balanceDue = Math.max(0, totalAmount - paidAmount);
+
+      const data = {
+        businessId,
+        invoiceNumber,
+        supplierId,
+        supplierName: supplier.companyName || '',
+        totalAmount,
+        paidAmount,
+        balanceDue,
+        updatedAt: serverTimestamp()
+      };
+
+      if (purchase) {
+        await updateDoc(doc(db, 'purchases', purchase.id), data);
+        showToast('Purchase updated!', 'success');
+      } else {
+        data.createdAt = serverTimestamp();
+        await addDoc(collection(db, 'purchases'), data);
+        showToast('Purchase created!', 'success');
+      }
+
+      window.closeModal();
+    } catch (err) {
+      showToast(err.message, 'error');
+    } finally {
+      toggleLoader(false);
+    }
+  };
+};
+
+window.editPurchaseModal = (id) => {
+  const p = state.purchases.find(x => x.id === id);
+  if (p) openPurchaseFormModal(p);
+};
+
+window.deletePurchase = async (id) => {
+  if (confirm("Delete purchase invoice?")) {
+    await deleteDoc(doc(db, "purchases", id));
+    showToast("Purchase removed.", "info");
+  }
 };
 
 // ==========================================================================

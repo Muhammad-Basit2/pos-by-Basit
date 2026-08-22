@@ -257,6 +257,7 @@
 
               <!-- Customer Selector -->
               <div class="cart-customer-select">
+                <input type="text" id="pos-customer-search" placeholder="Search customers...">
                 <select id="pos-customer-select">
                   <option value="WALKIN">Walk-in Customer (Grahak)</option>
                 </select>
@@ -312,6 +313,16 @@
                 <div class="summary-row due-change">
                   <span>Change Due: <strong id="pos-change-due" class="text-green">Rs. 0.00</strong></span>
                   <span>Balance Due: <strong id="pos-balance-due" class="text-red">Rs. 0.00</strong></span>
+                </div>
+
+                <div class="print-actions">
+                  <label for="pos-print-format">Print Format</label>
+                  <select id="pos-print-format" class="print-format-select">
+                    <option value="thermal">Thermal (80mm)</option>
+                    <option value="A4">A4 (210x297mm)</option>
+                    <option value="A5">A5 (148x210mm)</option>
+                  </select>
+                  <button id="pos-print-preview-btn" class="btn btn-secondary btn-sm">Preview</button>
                 </div>
 
                 <button id="pos-checkout-btn" class="btn btn-accent btn-block btn-lg"><i class="fa-solid fa-circle-check"></i> Complete Sale & Print Invoice</button>
@@ -450,8 +461,21 @@
         <!-- SUPPLIERS PAGE -->
         <section id="page-suppliers" class="page-view">
           <div class="table-actions">
-            <input type="text" id="supplier-search-input" placeholder="Search supplier or company...">
-            <button id="add-supplier-btn" class="btn btn-primary"><i class="fa-solid fa-handshake-angle"></i> Add Supplier</button>
+            <div style="display:flex; gap:12px; align-items:center; width:100%;">
+              <input type="text" id="supplier-search-input" placeholder="Search supplier or company..." style="flex:1;">
+
+              <div style="display:flex; gap:8px; align-items:center;">
+                <div class="chip" style="background:var(--card-bg);">
+                  <strong>Total Paid:</strong>
+                  <div id="suppliers-total-paid" style="margin-left:8px; font-weight:700;">Rs. 0</div>
+                </div>
+                <div class="chip" style="background:var(--card-bg);">
+                  <strong>Total Payable:</strong>
+                  <div id="suppliers-total-payable" style="margin-left:8px; font-weight:700; color:var(--danger);">Rs. 0</div>
+                </div>
+                <button id="add-supplier-btn" class="btn btn-primary"><i class="fa-solid fa-handshake-angle"></i> Add Supplier</button>
+              </div>
+            </div>
           </div>
 
           <div class="card table-card">
@@ -462,6 +486,7 @@
                     <th>Company / Supplier Name</th>
                     <th>Contact Person</th>
                     <th>Phone</th>
+                    <th>Total Paid</th>
                     <th>Payable Balance</th>
                     <th>Actions</th>
                   </tr>
