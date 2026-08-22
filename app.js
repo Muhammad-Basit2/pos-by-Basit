@@ -1866,19 +1866,88 @@ window.receiveCustomerPayment = async (id) => {
   const cust = state.customers.find((c) => c.id === id);
   if (!cust) return;
 
-  const amountStr = prompt(
-    `Current Udhaar for ${cust.name}: ${formatCurrency(cust.balance)}\nEnter received payment amount (Rs.):`,
-  );
-  const amount = parseFloat(amountStr);
-  if (isNaN(amount) || amount <= 0) return;
+  const modalContainer = document.getElementById("modal-container");
+  const modalContent = document.getElementById("modal-content");
+  if (!modalContainer || !modalContent) return;
 
-  try {
-    const newBal = Math.max(0, cust.balance - amount);
-    await updateDoc(doc(db, "customers", id), { balance: newBal });
-    showToast("Udhaar payment recorded!", "success");
-  } catch (err) {
-    showToast(err.message, "error");
-  }
+  const today = new Date().toISOString().slice(0, 10);
+  modalContent.innerHTML = `
+    <div class="modal-header">
+      <h3>Clear Udhaar</h3>
+      <button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+    <form id="udhaar-payment-form">
+      <div class="modal-body">
+        <p>Customer: <strong>${cust.name}</strong></p>
+        <p>Current Udhaar: <strong>${formatCurrency(cust.balance)}</strong></p>
+        <div class="form-row">
+          <div class="form-group">
+            <label for="udhaar-from-date">From</label>
+            <input type="date" id="udhaar-from-date" value="${today}" required>
+          </div>
+          <div class="form-group">
+            <label for="udhaar-to-date">To</label>
+            <input type="date" id="udhaar-to-date" value="${today}" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="udhaar-payment-amount">Received Amount (Rs.)</label>
+          <input type="number" id="udhaar-payment-amount" min="0.01" max="${cust.balance}" step="0.01" required>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" onclick="window.closeModal()">Cancel</button>
+        <button type="submit" class="btn btn-accent"><i class="fa-solid fa-hand-holding-dollar"></i> Clear Udhaar</button>
+      </div>
+    </form>
+  `;
+  modalContainer.classList.remove("hidden");
+
+  document.getElementById("udhaar-payment-form").onsubmit = async (event) => {
+    event.preventDefault();
+    const fromDate = document.getElementById("udhaar-from-date").value;
+    const toDate = document.getElementById("udhaar-to-date").value;
+    const amount = parseFloat(document.getElementById("udhaar-payment-amount").value);
+
+    if (fromDate > toDate) {
+      showToast("From date cannot be after To date.", "error");
+      return;
+    }
+    if (!Number.isFinite(amount) || amount <= 0 || amount > cust.balance) {
+      showToast("Enter a valid amount within the current Udhaar balance.", "error");
+      return;
+    }
+
+    toggleLoader(true, "Recording Udhaar Payment...");
+    try {
+      await runTransaction(db, async (transaction) => {
+        const customerRef = doc(db, "customers", id);
+        const customerDoc = await transaction.get(customerRef);
+        if (!customerDoc.exists()) throw new Error("Customer not found.");
+
+        const currentBalance = customerDoc.data().balance || 0;
+        if (amount > currentBalance) throw new Error("Payment exceeds current Udhaar balance.");
+
+        const paymentRef = doc(collection(db, "udhaarPayments"));
+        transaction.update(customerRef, { balance: Math.max(0, currentBalance - amount) });
+        transaction.set(paymentRef, {
+          businessId,
+          customerId: id,
+          customerName: cust.name,
+          amount,
+          fromDate,
+          toDate,
+          createdAt: serverTimestamp(),
+        });
+      });
+      window.closeModal();
+      showToast("Udhaar payment recorded!", "success");
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      toggleLoader(false);
+    }
+  };
 };
 
 const renderSuppliersTable = () => {
