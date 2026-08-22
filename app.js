@@ -1907,14 +1907,19 @@ window.receiveCustomerPayment = async (id) => {
     event.preventDefault();
     const fromDate = document.getElementById("udhaar-from-date").value;
     const toDate = document.getElementById("udhaar-to-date").value;
-    const amount = parseFloat(document.getElementById("udhaar-payment-amount").value);
+    const amount = parseFloat(
+      document.getElementById("udhaar-payment-amount").value,
+    );
 
     if (fromDate > toDate) {
       showToast("From date cannot be after To date.", "error");
       return;
     }
     if (!Number.isFinite(amount) || amount <= 0 || amount > cust.balance) {
-      showToast("Enter a valid amount within the current Udhaar balance.", "error");
+      showToast(
+        "Enter a valid amount within the current Udhaar balance.",
+        "error",
+      );
       return;
     }
 
@@ -1926,10 +1931,13 @@ window.receiveCustomerPayment = async (id) => {
         if (!customerDoc.exists()) throw new Error("Customer not found.");
 
         const currentBalance = customerDoc.data().balance || 0;
-        if (amount > currentBalance) throw new Error("Payment exceeds current Udhaar balance.");
+        if (amount > currentBalance)
+          throw new Error("Payment exceeds current Udhaar balance.");
 
         const paymentRef = doc(collection(db, "udhaarPayments"));
-        transaction.update(customerRef, { balance: Math.max(0, currentBalance - amount) });
+        transaction.update(customerRef, {
+          balance: Math.max(0, currentBalance - amount),
+        });
         transaction.set(paymentRef, {
           businessId,
           customerId: id,
