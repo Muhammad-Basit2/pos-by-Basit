@@ -69,6 +69,7 @@ let state = {
   sales: [],
   purchases: [],
   expenses: [],
+  udhaarPayments: [],
   cart: [],
   selectedCategory: "ALL",
   posSearchQuery: "",
@@ -874,6 +875,21 @@ const setupRealtimeListeners = () => {
       }));
       renderCustomersTable();
       renderPosCustomerDropdown();
+    },
+    handleErr,
+  );
+
+  const qUdhaarPayments = query(
+    collection(db, "udhaarPayments"),
+    where("businessId", "==", businessId),
+  );
+  onSnapshot(
+    qUdhaarPayments,
+    (snapshot) => {
+      state.udhaarPayments = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
     },
     handleErr,
   );
@@ -1721,6 +1737,7 @@ const renderCustomersTable = () => {
       <td>${c.cnic || "N/A"}</td>
       <td><strong class="${c.balance > 0 ? "text-red" : "text-green"}">${formatCurrency(c.balance)}</strong></td>
       <td>
+        <button class="btn btn-sm btn-secondary" onclick="window.openCustomerLedger('${c.id}')"><i class="fa-solid fa-book"></i> Ledger</button>
         <button class="btn btn-sm btn-secondary" onclick="window.editCustomerModal('${c.id}')"><i class="fa-solid fa-pen"></i></button>
         <button class="btn btn-sm btn-accent" onclick="window.receiveCustomerPayment('${c.id}')"><i class="fa-solid fa-hand-holding-dollar"></i> Clear Udhaar</button>
         <button class="btn btn-sm btn-danger" onclick="window.deleteCustomer('${c.id}')"><i class="fa-solid fa-trash"></i></button>
@@ -1894,10 +1911,15 @@ window.receiveCustomerPayment = async (id) => {
           <label for="udhaar-payment-amount">Received Amount (Rs.)</label>
           <input type="number" id="udhaar-payment-amount" min="0.01" max="${cust.balance}" step="0.01" required>
         </div>
+        <div class="form-group">
+          <label for="udhaar-payment-note">Payment Note / Details (Optional)</label>
+          <textarea id="udhaar-payment-note" rows="3" maxlength="300" placeholder="Example: Paid in cash for weekly Udhaar"></textarea>
+        </div>
       </div>
       <div class="modal-footer">
         <button type="button" class="btn btn-secondary" onclick="window.closeModal()">Cancel</button>
         <button type="submit" class="btn btn-accent"><i class="fa-solid fa-hand-holding-dollar"></i> Clear Udhaar</button>
+        <button type="submit" class="btn btn-primary" data-print-payment="true"><i class="fa-solid fa-print"></i> Save & Print</button>
       </div>
     </form>
   `;
@@ -1910,6 +1932,7 @@ window.receiveCustomerPayment = async (id) => {
     const amount = parseFloat(
       document.getElementById("udhaar-payment-amount").value,
     );
+    const note = document.getElementById("udhaar-payment-note").value.trim();
 
     if (fromDate > toDate) {
       showToast("From date cannot be after To date.", "error");
@@ -1945,17 +1968,105 @@ window.receiveCustomerPayment = async (id) => {
           amount,
           fromDate,
           toDate,
+          note,
           createdAt: serverTimestamp(),
         });
       });
       window.closeModal();
       showToast("Udhaar payment recorded!", "success");
+      if (event.submitter?.dataset.printPayment === "true") {
+        printReceivedPayment({ cust, amount, fromDate, toDate, note });
+      }
     } catch (err) {
       showToast(err.message, "error");
     } finally {
       toggleLoader(false);
     }
   };
+};
+
+const getLedgerDate = (entry) => {
+  if (entry.fromDate) return entry.fromDate;
+  return entry.createdAt?.toDate ? entry.createdAt.toDate().toISOString().slice(0, 10) : "";
+};
+
+const printReceivedPayment = ({ cust, amount, fromDate, toDate, note }) => {
+  const printWindow = window.open("", "_blank", "width=420,height=600");
+  if (!printWindow) return;
+  printWindow.document.write(`
+    <html><head><title>Udhaar Payment Receipt</title>
+    <style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h2{text-align:center}table{width:100%;border-collapse:collapse;margin-top:20px}td{padding:10px;border-bottom:1px solid #ddd}td:last-child{text-align:right;font-weight:bold}.total{font-size:20px}</style>
+    </head><body onload="window.print()">
+      <h2>Udhaar Payment Receipt</h2>
+      <p style="text-align:center">${currentBusiness?.shopName || "PakPOS Store"}</p>
+      <table>
+        <tr><td>Customer</td><td>${cust.name}</td></tr>
+        <tr><td>Payment From</td><td>${fromDate}</td></tr>
+        <tr><td>Payment To</td><td>${toDate}</td></tr>
+        <tr class="total"><td>Received Amount</td><td>${formatCurrency(amount)}</td></tr>
+        ${note ? `<tr><td>Note / Details</td><td>${note}</td></tr>` : ""}
+      </table>
+      <p style="text-align:center;margin-top:30px">Payment received successfully.</p>
+    </body></html>
+  `);
+  printWindow.document.close();
+};
+
+window.openCustomerLedger = (id) => {
+  const cust = state.customers.find((customer) => customer.id === id);
+  if (!cust) return;
+
+  const modalContainer = document.getElementById("modal-container");
+  const modalContent = document.getElementById("modal-content");
+  if (!modalContainer || !modalContent) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const renderLedger = () => {
+    const fromDate = document.getElementById("ledger-from-date")?.value || "";
+    const toDate = document.getElementById("ledger-to-date")?.value || "";
+    const entries = [
+      ...state.sales
+        .filter((sale) => sale.customerId === id && sale.balanceDue > 0)
+        .map((sale) => ({ date: getLedgerDate(sale), type: "Credit Sale", detail: sale.invoiceNumber, amount: sale.balanceDue })),
+      ...state.udhaarPayments
+        .filter((payment) => payment.customerId === id)
+        .map((payment) => ({ date: getLedgerDate(payment), type: "Received Payment", detail: `${payment.fromDate} to ${payment.toDate}${payment.note ? ` - ${payment.note}` : ""}`, amount: -payment.amount })),
+    ]
+      .filter((entry) => (!fromDate || entry.date >= fromDate) && (!toDate || entry.date <= toDate))
+      .sort((a, b) => a.date.localeCompare(b.date));
+    const totalCredit = entries.reduce((total, entry) => total + entry.amount, 0);
+    const rows = entries.length
+      ? entries.map((entry) => `<tr><td>${entry.date || "N/A"}</td><td>${entry.type}</td><td>${entry.detail}</td><td class="${entry.amount < 0 ? "text-green" : "text-red"}">${formatCurrency(Math.abs(entry.amount))}</td></tr>`).join("")
+      : `<tr><td colspan="4">No ledger entries for this period.</td></tr>`;
+    const body = document.getElementById("customer-ledger-body");
+    const total = document.getElementById("customer-ledger-total");
+    if (body) body.innerHTML = rows;
+    if (total) total.textContent = formatCurrency(totalCredit);
+  };
+
+  modalContent.innerHTML = `
+    <div class="modal-header"><h3>Udhaar Ledger: ${cust.name}</h3><button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group"><label>From</label><input type="date" id="ledger-from-date" value=""></div><div class="form-group"><label>To</label><input type="date" id="ledger-to-date" value="${today}"></div></div>
+      <div class="table-responsive"><table class="data-table"><thead><tr><th>Date</th><th>Type</th><th>Reference</th><th>Amount</th></tr></thead><tbody id="customer-ledger-body"></tbody></table></div>
+      <p style="text-align:right;margin-top:12px"><strong>Period Balance: <span id="customer-ledger-total"></span></strong></p>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="window.closeModal()">Close</button><button type="button" class="btn btn-primary" id="print-customer-ledger"><i class="fa-solid fa-print"></i> Print Ledger</button></div>
+  `;
+  modalContainer.classList.remove("hidden");
+  document.getElementById("ledger-from-date")?.addEventListener("change", renderLedger);
+  document.getElementById("ledger-to-date")?.addEventListener("change", renderLedger);
+  document.getElementById("print-customer-ledger")?.addEventListener("click", () => {
+    const fromDate = document.getElementById("ledger-from-date")?.value || "Any date";
+    const toDate = document.getElementById("ledger-to-date")?.value || "Any date";
+    const printWindow = window.open("", "_blank", "width=700,height=700");
+    if (!printWindow) return;
+    printWindow.document.write(`<html><head><title>Udhaar Ledger - ${cust.name}</title><style>body{font-family:Arial;padding:24px}h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{padding:10px;border:1px solid #ccc;text-align:left}.amount{text-align:right}</style></head><body><h2>Udhaar Ledger</h2><p><strong>Customer:</strong> ${cust.name}</p><p><strong>From:</strong> ${fromDate} &nbsp; <strong>To:</strong> ${toDate}</p><table>${document.querySelector("#customer-ledger-body")?.closest("table")?.innerHTML || ""}</table><p><strong>Current Udhaar: ${formatCurrency(cust.balance)}</strong></p></body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  });
+  renderLedger();
 };
 
 const renderSuppliersTable = () => {
@@ -1999,6 +2110,7 @@ const renderSuppliersTable = () => {
       <td>${formatCurrency(supplierPaid)}</td>
       <td><strong class="text-red">${formatCurrency(supplierPayable)}</strong></td>
       <td>
+        <button class="btn btn-sm btn-secondary" onclick="window.openSupplierLedger('${s.id}')"><i class="fa-solid fa-book"></i> Ledger</button>
         <button class="btn btn-sm btn-secondary" onclick="window.editSupplierModal('${s.id}')"><i class="fa-solid fa-pen"></i></button>
         <button class="btn btn-sm btn-danger" onclick="window.deleteSupplier('${s.id}')"><i class="fa-solid fa-trash"></i></button>
       </td>
@@ -2011,6 +2123,71 @@ const renderSuppliersTable = () => {
   const totalPayableEl = document.getElementById("suppliers-total-payable");
   if (totalPaidEl) totalPaidEl.innerText = formatCurrency(overallPaid);
   if (totalPayableEl) totalPayableEl.innerText = formatCurrency(overallPayable);
+};
+
+window.openSupplierLedger = (id) => {
+  const supplier = state.suppliers.find((item) => item.id === id);
+  if (!supplier) return;
+
+  const modalContainer = document.getElementById("modal-container");
+  const modalContent = document.getElementById("modal-content");
+  if (!modalContainer || !modalContent) return;
+
+  const today = new Date().toISOString().slice(0, 10);
+  const getPurchaseDate = (purchase) =>
+    purchase.createdAt?.toDate
+      ? purchase.createdAt.toDate().toISOString().slice(0, 10)
+      : "";
+
+  const renderLedger = () => {
+    const fromDate = document.getElementById("supplier-ledger-from")?.value || "";
+    const toDate = document.getElementById("supplier-ledger-to")?.value || "";
+    const purchases = state.purchases
+      .filter((purchase) => purchase.supplierId === id || purchase.supplierName === supplier.companyName)
+      .map((purchase) => ({
+        date: getPurchaseDate(purchase),
+        invoiceNumber: purchase.invoiceNumber || "N/A",
+        totalAmount: purchase.totalAmount || 0,
+        paidAmount: purchase.paidAmount || 0,
+        balanceDue: purchase.balanceDue || 0,
+      }))
+      .filter((purchase) => (!fromDate || purchase.date >= fromDate) && (!toDate || purchase.date <= toDate));
+
+    const rows = purchases.length
+      ? purchases.map((purchase) => `
+        <tr><td>${purchase.date || "N/A"}</td><td>${purchase.invoiceNumber}</td><td>${formatCurrency(purchase.totalAmount)}</td><td class="text-green">${formatCurrency(purchase.paidAmount)}</td><td class="text-red">${formatCurrency(purchase.balanceDue)}</td></tr>
+      `).join("")
+      : `<tr><td colspan="5">No purchase entries for this period.</td></tr>`;
+    const totalPurchases = purchases.reduce((sum, purchase) => sum + purchase.totalAmount, 0);
+    const totalPaid = purchases.reduce((sum, purchase) => sum + purchase.paidAmount, 0);
+    const totalDue = purchases.reduce((sum, purchase) => sum + purchase.balanceDue, 0);
+    const body = document.getElementById("supplier-ledger-body");
+    if (body) body.innerHTML = rows;
+    const totals = document.getElementById("supplier-ledger-totals");
+    if (totals) totals.innerHTML = `<strong>Purchases: ${formatCurrency(totalPurchases)}</strong> &nbsp; <strong class="text-green">Paid: ${formatCurrency(totalPaid)}</strong> &nbsp; <strong class="text-red">Payable: ${formatCurrency(totalDue)}</strong>`;
+  };
+
+  modalContent.innerHTML = `
+    <div class="modal-header"><h3>Supplier Ledger: ${supplier.companyName}</h3><button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button></div>
+    <div class="modal-body">
+      <div class="form-row"><div class="form-group"><label>From</label><input type="date" id="supplier-ledger-from"></div><div class="form-group"><label>To</label><input type="date" id="supplier-ledger-to" value="${today}"></div></div>
+      <div class="table-responsive"><table class="data-table"><thead><tr><th>Date</th><th>Invoice</th><th>Purchase</th><th>Paid</th><th>Payable</th></tr></thead><tbody id="supplier-ledger-body"></tbody></table></div>
+      <p id="supplier-ledger-totals" style="text-align:right;margin-top:12px"></p>
+    </div>
+    <div class="modal-footer"><button type="button" class="btn btn-secondary" onclick="window.closeModal()">Close</button><button type="button" class="btn btn-primary" id="print-supplier-ledger"><i class="fa-solid fa-print"></i> Print Ledger</button></div>
+  `;
+  modalContainer.classList.remove("hidden");
+  document.getElementById("supplier-ledger-from")?.addEventListener("change", renderLedger);
+  document.getElementById("supplier-ledger-to")?.addEventListener("change", renderLedger);
+  document.getElementById("print-supplier-ledger")?.addEventListener("click", () => {
+    const printWindow = window.open("", "_blank", "width=800,height=700");
+    if (!printWindow) return;
+    printWindow.document.write(`<html><head><title>Supplier Ledger - ${supplier.companyName}</title><style>body{font-family:Arial;padding:24px}h2{text-align:center}table{width:100%;border-collapse:collapse}th,td{padding:10px;border:1px solid #ccc;text-align:left}</style></head><body><h2>Supplier Ledger</h2><p><strong>Supplier:</strong> ${supplier.companyName}</p><p><strong>From:</strong> ${document.getElementById("supplier-ledger-from")?.value || "Any date"} &nbsp; <strong>To:</strong> ${document.getElementById("supplier-ledger-to")?.value || "Any date"}</p><table><thead><tr><th>Date</th><th>Invoice</th><th>Purchase</th><th>Paid</th><th>Payable</th></tr></thead>${document.getElementById("supplier-ledger-body")?.innerHTML || ""}</table><p>${document.getElementById("supplier-ledger-totals")?.innerHTML || ""}</p></body></html>`);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+  });
+  renderLedger();
 };
 
 const openSupplierModal = (supplier = null) => {
