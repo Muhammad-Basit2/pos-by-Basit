@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PakPOS - Retail & Inventory Management System</title>
-  
+
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Chart.js CDN -->
@@ -12,10 +13,13 @@
   <!-- Google Fonts: Inter & Noto Nastaliq Urdu -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
-  
+  <link
+    href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap"
+    rel="stylesheet">
+
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body class="light-mode">
 
   <!-- Toast Container -->
@@ -53,7 +57,8 @@
           <label><i class="fa-solid fa-lock"></i> Password</label>
           <input type="password" id="login-password" placeholder="••••••••" required>
         </div>
-        <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-right-to-bracket"></i> Sign In</button>
+        <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-right-to-bracket"></i> Sign
+          In</button>
         <div class="auth-toggle">
           <span>Need a new account? <a href="#" id="show-register">Register Shop</a></span>
         </div>
@@ -78,7 +83,8 @@
           <label><i class="fa-solid fa-lock"></i> Password</label>
           <input type="password" id="reg-password" placeholder="At least 6 characters" minlength="6" required>
         </div>
-        <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-user-plus"></i> Register Store</button>
+        <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-user-plus"></i> Register
+          Store</button>
         <div class="auth-toggle">
           <span>Already registered? <a href="#" id="show-login">Sign In</a></span>
         </div>
@@ -105,22 +111,34 @@
 
       <nav class="sidebar-nav">
         <ul>
-          <li><a href="#" data-page="dashboard" class="nav-link active"><i class="fa-solid fa-chart-line"></i> <span>Dashboard</span></a></li>
-          <li><a href="#" data-page="pos" class="nav-link"><i class="fa-solid fa-calculator"></i> <span>POS Terminal</span></a></li>
-          <li><a href="#" data-page="products" class="nav-link"><i class="fa-solid fa-boxes-stacked"></i> <span>Inventory</span></a></li>
-          <li><a href="#" data-page="purchases" class="nav-link"><i class="fa-solid fa-truck-ramp-box"></i> <span>Purchases</span></a></li>
-          <li><a href="#" data-page="sales-history" class="nav-link"><i class="fa-solid fa-receipt"></i> <span>Sales History</span></a></li>
-          <li><a href="#" data-page="customers" class="nav-link"><i class="fa-solid fa-users"></i> <span>Customers / Udhaar</span></a></li>
-          <li><a href="#" data-page="suppliers" class="nav-link"><i class="fa-solid fa-handshake"></i> <span>Suppliers</span></a></li>
-          <li><a href="#" data-page="expenses" class="nav-link"><i class="fa-solid fa-wallet"></i> <span>Expenses</span></a></li>
-          <li><a href="#" data-page="reports" class="nav-link"><i class="fa-solid fa-file-invoice-dollar"></i> <span>Reports</span></a></li>
-          <li><a href="#" data-page="settings" class="nav-link"><i class="fa-solid fa-gear"></i> <span>Settings</span></a></li>
+          <li><a href="#" data-page="dashboard" class="nav-link active"><i class="fa-solid fa-chart-line"></i>
+              <span>Dashboard</span></a></li>
+          <li><a href="#" data-page="pos" class="nav-link"><i class="fa-solid fa-calculator"></i> <span>POS
+                Terminal</span></a></li>
+          <li><a href="#" data-page="products" class="nav-link"><i class="fa-solid fa-boxes-stacked"></i>
+              <span>Inventory</span></a></li>
+          <li><a href="#" data-page="purchases" class="nav-link"><i class="fa-solid fa-truck-ramp-box"></i>
+              <span>Purchases</span></a></li>
+          <li><a href="#" data-page="sales-history" class="nav-link"><i class="fa-solid fa-receipt"></i> <span>Sales
+                History</span></a></li>
+          <li><a href="#" data-page="customers" class="nav-link"><i class="fa-solid fa-users"></i> <span>Customers /
+                Udhaar</span></a></li>
+          <li><a href="#" data-page="suppliers" class="nav-link"><i class="fa-solid fa-handshake"></i>
+              <span>Suppliers</span></a></li>
+          <li><a href="#" data-page="expenses" class="nav-link"><i class="fa-solid fa-wallet"></i>
+              <span>Expenses</span></a></li>
+          <li><a href="#" data-page="reports" class="nav-link"><i class="fa-solid fa-file-invoice-dollar"></i>
+              <span>Reports</span></a></li>
+          <li><a href="#" data-page="settings" class="nav-link"><i class="fa-solid fa-gear"></i>
+              <span>Settings</span></a></li>
         </ul>
       </nav>
 
       <div class="sidebar-footer">
-        <button id="theme-toggle" class="btn btn-sm btn-secondary"><i class="fa-solid fa-moon"></i> <span>Dark Mode</span></button>
-        <button id="logout-btn" class="btn btn-sm btn-danger"><i class="fa-solid fa-arrow-right-from-bracket"></i> <span>Logout</span></button>
+        <button id="theme-toggle" class="btn btn-sm btn-secondary"><i class="fa-solid fa-moon"></i> <span>Dark
+            Mode</span></button>
+        <button id="logout-btn" class="btn btn-sm btn-danger"><i class="fa-solid fa-arrow-right-from-bracket"></i>
+          <span>Logout</span></button>
       </div>
     </aside>
 
@@ -142,7 +160,7 @@
       </header>
 
       <div id="page-container" class="page-container">
-        
+
         <!-- DASHBOARD PAGE -->
         <section id="page-dashboard" class="page-view active">
           <div class="metrics-grid">
@@ -232,7 +250,8 @@
               <div class="pos-search-bar">
                 <div class="input-with-icon">
                   <i class="fa-solid fa-magnifying-glass"></i>
-                  <input type="text" id="pos-search" placeholder="Search product by name, SKU, or scan barcode..." autofocus>
+                  <input type="text" id="pos-search" placeholder="Search product by name, SKU, or scan barcode..."
+                    autofocus>
                 </div>
                 <select id="pos-category-filter">
                   <option value="ALL">All Categories</option>
@@ -252,7 +271,8 @@
             <div class="pos-right card">
               <div class="cart-header">
                 <h3><i class="fa-solid fa-cart-flatbed"></i> Current Invoice Cart</h3>
-                <button id="pos-clear-cart" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i> Clear</button>
+                <button id="pos-clear-cart" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i>
+                  Clear</button>
               </div>
 
               <!-- Customer Selector -->
@@ -261,7 +281,8 @@
                 <select id="pos-customer-select">
                   <option value="WALKIN">Walk-in Customer (Grahak)</option>
                 </select>
-                <button id="pos-add-customer-btn" class="btn btn-sm btn-secondary" title="Add New Customer"><i class="fa-solid fa-user-plus"></i></button>
+                <button id="pos-add-customer-btn" class="btn btn-sm btn-secondary" title="Add New Customer"><i
+                    class="fa-solid fa-user-plus"></i></button>
               </div>
 
               <!-- Cart Items List -->
@@ -280,7 +301,8 @@
                 </div>
                 <div class="summary-row">
                   <span>Discount (Fixed / %)</span>
-                  <input type="number" id="pos-discount-input" min="0" value="0" style="width: 80px; text-align: right;">
+                  <input type="number" id="pos-discount-input" min="0" value="0"
+                    style="width: 80px; text-align: right;">
                 </div>
                 <div class="summary-row">
                   <span>Sales Tax (GST %)</span>
@@ -325,7 +347,8 @@
                   <button id="pos-print-preview-btn" class="btn btn-secondary btn-sm">Preview</button>
                 </div>
 
-                <button id="pos-checkout-btn" class="btn btn-accent btn-block btn-lg"><i class="fa-solid fa-circle-check"></i> Complete Sale & Print Invoice</button>
+                <button id="pos-checkout-btn" class="btn btn-accent btn-block btn-lg"><i
+                    class="fa-solid fa-circle-check"></i> Complete Sale & Print Invoice</button>
               </div>
             </div>
           </div>
@@ -342,7 +365,8 @@
             </div>
             <div class="button-group">
               <button id="add-product-btn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Product</button>
-              <button id="manage-categories-btn" class="btn btn-secondary"><i class="fa-solid fa-layer-group"></i> Categories</button>
+              <button id="manage-categories-btn" class="btn btn-secondary"><i class="fa-solid fa-layer-group"></i>
+                Categories</button>
             </div>
           </div>
 
@@ -374,7 +398,8 @@
         <section id="page-purchases" class="page-view">
           <div class="table-actions">
             <h3><i class="fa-solid fa-truck-ramp-box"></i> Purchase Stock from Suppliers</h3>
-            <button id="new-purchase-btn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Record New Stock Purchase</button>
+            <button id="new-purchase-btn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Record New Stock
+              Purchase</button>
           </div>
 
           <div class="card table-card">
@@ -435,7 +460,8 @@
         <section id="page-customers" class="page-view">
           <div class="table-actions">
             <input type="text" id="customer-search-input" placeholder="Search customer name or phone...">
-            <button id="add-customer-btn" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add Customer</button>
+            <button id="add-customer-btn" class="btn btn-primary"><i class="fa-solid fa-user-plus"></i> Add
+              Customer</button>
           </div>
 
           <div class="card table-card">
@@ -471,9 +497,11 @@
                 </div>
                 <div class="chip" style="background:var(--card-bg);">
                   <strong>Total Payable:</strong>
-                  <div id="suppliers-total-payable" style="margin-left:8px; font-weight:700; color:var(--danger);">Rs. 0</div>
+                  <div id="suppliers-total-payable" style="margin-left:8px; font-weight:700; color:var(--danger);">Rs. 0
+                  </div>
                 </div>
-                <button id="add-supplier-btn" class="btn btn-primary"><i class="fa-solid fa-handshake-angle"></i> Add Supplier</button>
+                <button id="add-supplier-btn" class="btn btn-primary"><i class="fa-solid fa-handshake-angle"></i> Add
+                  Supplier</button>
               </div>
             </div>
           </div>
@@ -503,7 +531,8 @@
         <section id="page-expenses" class="page-view">
           <div class="table-actions">
             <h3><i class="fa-solid fa-receipt"></i> Store Expenses (Electricity, Rent, Salaries)</h3>
-            <button id="add-expense-btn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Expense Entry</button>
+            <button id="add-expense-btn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Expense
+              Entry</button>
           </div>
 
           <div class="card table-card">
@@ -539,7 +568,8 @@
                 <label>To Date</label>
                 <input type="date" id="report-end-date">
               </div>
-              <button id="generate-report-btn" class="btn btn-accent"><i class="fa-solid fa-sliders"></i> Generate Report</button>
+              <button id="generate-report-btn" class="btn btn-accent"><i class="fa-solid fa-sliders"></i> Generate
+                Report</button>
             </div>
           </div>
 
@@ -596,9 +626,11 @@
                   </div>
                   <div class="form-group">
                     <label>Invoice Footer Message</label>
-                    <input type="text" id="set-invoice-footer" value="Thank you for shopping with us! Phir Tashreef Layen.">
+                    <input type="text" id="set-invoice-footer"
+                      value="Thank you for shopping with us! Phir Tashreef Layen.">
                   </div>
-                  <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Shop Settings</button>
+                  <button type="submit" class="btn btn-primary"><i class="fa-solid fa-floppy-disk"></i> Save Shop
+                    Settings</button>
                 </form>
               </div>
             </div>
@@ -608,13 +640,17 @@
                 <h3><i class="fa-solid fa-database"></i> Backup & Demo Data</h3>
               </div>
               <div class="card-body">
-                <p>Quickly seed your inventory with common Pakistani retail items (Sugar, Atta, Rice, Milk, Oil, Tea) to test out the system immediately.</p>
-                <button id="load-demo-data-btn" class="btn btn-accent" style="margin-bottom: 20px;"><i class="fa-solid fa-vial"></i> Load Pakistani Demo Inventory</button>
+                <p>Quickly seed your inventory with common Pakistani retail items (Sugar, Atta, Rice, Milk, Oil, Tea) to
+                  test out the system immediately.</p>
+                <button id="load-demo-data-btn" class="btn btn-accent" style="margin-bottom: 20px;"><i
+                    class="fa-solid fa-vial"></i> Load Pakistani Demo Inventory</button>
                 <hr>
                 <h4>CSV Export Capabilities</h4>
                 <div class="button-group" style="margin-top: 10px;">
-                  <button id="export-products-csv" class="btn btn-secondary"><i class="fa-solid fa-file-csv"></i> Export Products CSV</button>
-                  <button id="export-sales-csv" class="btn btn-secondary"><i class="fa-solid fa-file-csv"></i> Export Sales CSV</button>
+                  <button id="export-products-csv" class="btn btn-secondary"><i class="fa-solid fa-file-csv"></i> Export
+                    Products CSV</button>
+                  <button id="export-sales-csv" class="btn btn-secondary"><i class="fa-solid fa-file-csv"></i> Export
+                    Sales CSV</button>
                 </div>
               </div>
             </div>
@@ -673,4 +709,5 @@
 
   <script type="module" src="app.js"></script>
 </body>
+
 </html>

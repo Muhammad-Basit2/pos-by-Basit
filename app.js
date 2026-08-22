@@ -1,11 +1,27 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { 
-  getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword, 
-  signOut, onAuthStateChanged, setPersistence, inMemoryPersistence
+import {
+  getAuth,
+  signInWithEmailAndPassword,
+  createUserWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  setPersistence,
+  inMemoryPersistence,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-import { 
-  getFirestore, doc, setDoc, getDoc, collection, addDoc, updateDoc, 
-  deleteDoc, onSnapshot, query, where, runTransaction, serverTimestamp
+import {
+  getFirestore,
+  doc,
+  setDoc,
+  getDoc,
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  onSnapshot,
+  query,
+  where,
+  runTransaction,
+  serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
 // ==========================================================================
@@ -18,7 +34,7 @@ const firebaseConfig = {
   storageBucket: "pos-by-basit.firebasestorage.app",
   messagingSenderId: "565421098587",
   appId: "1:565421098587:web:0bc1d69f52f3bab647217e",
-  measurementId: "G-QH75X9ZVCL"
+  measurementId: "G-QH75X9ZVCL",
 };
 
 const app = initializeApp(firebaseConfig);
@@ -40,7 +56,14 @@ let businessId = null;
 
 let state = {
   products: [],
-  categories: ["Grocery", "Beverages", "Dairy", "Bakery", "Snacks", "Household"],
+  categories: [
+    "Grocery",
+    "Beverages",
+    "Dairy",
+    "Bakery",
+    "Snacks",
+    "Household",
+  ],
   customers: [],
   suppliers: [],
   sales: [],
@@ -48,7 +71,7 @@ let state = {
   expenses: [],
   cart: [],
   selectedCategory: "ALL",
-  posSearchQuery: ""
+  posSearchQuery: "",
 };
 
 let salesChartInstance = null;
@@ -58,10 +81,13 @@ let topProductsChartInstance = null;
 // 3. UTILITY FUNCTIONS & MODAL HANDLERS
 // ==========================================================================
 const formatCurrency = (amount) => {
-  return "Rs. " + Number(amount || 0).toLocaleString("en-PK", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2
-  });
+  return (
+    "Rs. " +
+    Number(amount || 0).toLocaleString("en-PK", {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    })
+  );
 };
 
 const showToast = (message, type = "info") => {
@@ -95,32 +121,39 @@ const normalizeToStandardUnit = (qty, unit) => {
   return parsedQty;
 };
 
-const populatePrintWindowContent = (printWindow, saleData, format = 'thermal', autoPrint = true) => {
+const populatePrintWindowContent = (
+  printWindow,
+  saleData,
+  format = "thermal",
+  autoPrint = true,
+) => {
   if (!printWindow) return;
 
   const subtotalForCalc = saleData.subtotal || 0;
 
-  const itemsHtmlSimple = saleData.items.map((item, idx) => {
-    return `
+  const itemsHtmlSimple = saleData.items
+    .map((item, idx) => {
+      return `
       <tr>
         <td style="padding:6px 8px;">${idx + 1}</td>
         <td style="padding:6px 8px;">${item.name}</td>
         <td style="padding:6px 8px; text-align:right;">${formatCurrency(item.sellingPrice)}</td>
         <td style="padding:6px 8px; text-align:center;">${item.qty}</td>
-        <td style="padding:6px 8px; text-align:center;">${subtotalForCalc ? (((item.lineTotal || 0) / subtotalForCalc) * (saleData.taxAmount || 0)).toFixed(2) : '0.00'}</td>
+        <td style="padding:6px 8px; text-align:center;">${subtotalForCalc ? (((item.lineTotal || 0) / subtotalForCalc) * (saleData.taxAmount || 0)).toFixed(2) : "0.00"}</td>
         <td style="padding:6px 8px; text-align:right;">${formatCurrency(item.lineTotal)}</td>
       </tr>
     `;
-  }).join('');
+    })
+    .join("");
 
   // Use the same styled template for A5 and A4, but adjust page size and max-width
-  if (format === 'A5' || format === 'A4') {
-    const pageSize = format === 'A4' ? 'A4' : 'A5';
+  if (format === "A5" || format === "A4") {
+    const pageSize = format === "A4" ? "A4" : "A5";
     const pageCss = `@page { size: ${pageSize} portrait; margin: 10mm; }`;
 
-    const containerMaxWidth = format === 'A4' ? '180mm' : '148mm';
-    const titleSize = format === 'A4' ? '36px' : '32px';
-    const shopFontSize = format === 'A4' ? '22px' : '20px';
+    const containerMaxWidth = format === "A4" ? "180mm" : "148mm";
+    const titleSize = format === "A4" ? "36px" : "32px";
+    const shopFontSize = format === "A4" ? "22px" : "20px";
 
     const html = `
       <html>
@@ -169,8 +202,8 @@ const populatePrintWindowContent = (printWindow, saleData, format = 'thermal', a
                 <h2>INVOICE</h2>
               </div>
               <div class="logo">
-                <h1>${currentBusiness?.shopName || 'PAKPOS'}</h1>
-                <div style="font-size:12px; color:#7a5f3a;">${currentBusiness?.ownerName || ''}</div>
+                <h1>${currentBusiness?.shopName || "PAKPOS"}</h1>
+                <div style="font-size:12px; color:#7a5f3a;">${currentBusiness?.ownerName || ""}</div>
               </div>
               <div class="inv-meta">
                 <div>Invoice Number: <span class="inv-number">${saleData.invoiceNumber}</span></div>
@@ -182,12 +215,12 @@ const populatePrintWindowContent = (printWindow, saleData, format = 'thermal', a
               <div class="box">
                 <h4>BILL TO</h4>
                 <p><strong>${saleData.customerName}</strong></p>
-                <p>Phone: ${(saleData.customerPhone) ? saleData.customerPhone : 'N/A'}</p>
+                <p>Phone: ${saleData.customerPhone ? saleData.customerPhone : "N/A"}</p>
               </div>
               <div class="box">
                 <h4>DATA FOR THE TRANSFER</h4>
-                <p>${currentBusiness?.shopName || ''}</p>
-                <p>Phone: ${currentBusiness?.phone || ''}</p>
+                <p>${currentBusiness?.shopName || ""}</p>
+                <p>Phone: ${currentBusiness?.phone || ""}</p>
                 <p>Usage: Sale ${saleData.invoiceNumber}</p>
               </div>
             </div>
@@ -211,7 +244,7 @@ const populatePrintWindowContent = (printWindow, saleData, format = 'thermal', a
             <div class="totals">
               <div class="right">
                 <div class="row"><div>Subtotal</div><div>${formatCurrency(saleData.subtotal)}</div></div>
-                ${saleData.discount > 0 ? `<div class="row"><div>Discount</div><div>-${formatCurrency(saleData.discount)}</div></div>` : ''}
+                ${saleData.discount > 0 ? `<div class="row"><div>Discount</div><div>-${formatCurrency(saleData.discount)}</div></div>` : ""}
                 <div class="row"><div>GST</div><div>${formatCurrency(saleData.taxAmount || 0)}</div></div>
                 <div class="row grand"><div>Total</div><div>${formatCurrency(saleData.grandTotal)}</div></div>
               </div>
@@ -219,7 +252,7 @@ const populatePrintWindowContent = (printWindow, saleData, format = 'thermal', a
 
             <div class="payment">
               <div class="signature">
-                <div>Payment Method: <strong>${saleData.paymentMethod || 'Cash'}</strong></div>
+                <div>Payment Method: <strong>${saleData.paymentMethod || "Cash"}</strong></div>
                 <div class="sig-line"></div>
                 <div style="font-size:12px; color:#7a7a7a;">Signature</div>
               </div>
@@ -230,8 +263,8 @@ const populatePrintWindowContent = (printWindow, saleData, format = 'thermal', a
             </div>
 
             <div class="inv-footer">
-              <div>${currentBusiness?.address || ''} • Phone: ${currentBusiness?.phone || ''}</div>
-              <div>${currentBusiness?.invoiceFooter || ''}</div>
+              <div>${currentBusiness?.address || ""} • Phone: ${currentBusiness?.phone || ""}</div>
+              <div>${currentBusiness?.invoiceFooter || ""}</div>
             </div>
           </div>
           <script>${autoPrint ? "window.onload = () => { setTimeout(() => { window.print(); }, 200); };" : ""}</script>
@@ -246,23 +279,27 @@ const populatePrintWindowContent = (printWindow, saleData, format = 'thermal', a
   }
 
   // Fallback: use existing generic template for thermal/A4
-  const itemsHtml = saleData.items.map(item => `
+  const itemsHtml = saleData.items
+    .map(
+      (item) => `
     <tr>
       <td style="width:70%;">${item.name} (${item.qty} ${item.unit})</td>
       <td style="text-align: right; width:30%;">${formatCurrency(item.lineTotal)}</td>
     </tr>
-  `).join("");
+  `,
+    )
+    .join("");
 
   // Choose CSS based on requested format
-  let pageCss = '';
-  let bodyStyle = '';
-  if (format === 'A4') {
-    pageCss = '@page { size: A4 portrait; margin: 10mm; }';
-    bodyStyle = 'width:210mm; font-family: Arial, sans-serif; font-size:12px;';
+  let pageCss = "";
+  let bodyStyle = "";
+  if (format === "A4") {
+    pageCss = "@page { size: A4 portrait; margin: 10mm; }";
+    bodyStyle = "width:210mm; font-family: Arial, sans-serif; font-size:12px;";
   } else {
     // thermal
-    pageCss = '@page { size: 80mm auto; margin: 3mm; }';
-    bodyStyle = 'width:80mm; font-family: monospace; font-size:11px;';
+    pageCss = "@page { size: 80mm auto; margin: 3mm; }";
+    bodyStyle = "width:80mm; font-family: monospace; font-size:11px;";
   }
 
   printWindow.document.open();
@@ -295,8 +332,8 @@ const populatePrintWindowContent = (printWindow, saleData, format = 'thermal', a
             <td>Subtotal:</td>
             <td style="text-align: right;">${formatCurrency(saleData.subtotal)}</td>
           </tr>
-          ${saleData.discount > 0 ? `<tr><td>Discount:</td><td style="text-align: right;">-${formatCurrency(saleData.discount)}</td></tr>` : ''}
-          ${saleData.taxAmount > 0 ? `<tr><td>GST:</td><td style="text-align: right;">${formatCurrency(saleData.taxAmount)}</td></tr>` : ''}
+          ${saleData.discount > 0 ? `<tr><td>Discount:</td><td style="text-align: right;">-${formatCurrency(saleData.discount)}</td></tr>` : ""}
+          ${saleData.taxAmount > 0 ? `<tr><td>GST:</td><td style="text-align: right;">${formatCurrency(saleData.taxAmount)}</td></tr>` : ""}
           <tr class="total-row border-top">
             <td>Grand Total:</td>
             <td style="text-align: right;">${formatCurrency(saleData.grandTotal)}</td>
@@ -310,7 +347,7 @@ const populatePrintWindowContent = (printWindow, saleData, format = 'thermal', a
             <td style="text-align: right;">${formatCurrency(saleData.balanceDue)}</td>
           </tr>
         </table>
-        <p style="margin-top: 10px; text-align:center;">${currentBusiness?.invoiceFooter || 'Thank you for shopping!'}</p>
+        <p style="margin-top: 10px; text-align:center;">${currentBusiness?.invoiceFooter || "Thank you for shopping!"}</p>
         <script>
           // Auto-print on window load (user can cancel or choose printer);
           window.onload = () => { setTimeout(() => { window.print(); }, 200); };
@@ -356,7 +393,7 @@ const loadUserProfileAndBusiness = async () => {
   try {
     const userRef = doc(db, "users", currentUser.uid);
     let userDoc = await getDoc(userRef);
-    
+
     if (!userDoc.exists()) {
       const newBizRef = doc(collection(db, "businesses"));
       await setDoc(newBizRef, {
@@ -365,7 +402,7 @@ const loadUserProfileAndBusiness = async () => {
         phone: "",
         address: "",
         tax: 0,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
       });
 
       await setDoc(userRef, {
@@ -373,25 +410,31 @@ const loadUserProfileAndBusiness = async () => {
         name: currentUser.displayName || "Admin User",
         email: currentUser.email,
         businessId: newBizRef.id,
-        role: "Admin"
+        role: "Admin",
       });
-      
+
       userDoc = await getDoc(userRef);
     }
 
     const userData = userDoc.data() || {};
     businessId = userData.businessId || "default_biz";
-    
+
     const bizDoc = await getDoc(doc(db, "businesses", businessId));
     if (bizDoc.exists()) {
       currentBusiness = bizDoc.data();
     } else {
-      currentBusiness = { shopName: "My PakPOS Store", ownerName: "Admin", phone: "", address: "", tax: 0 };
+      currentBusiness = {
+        shopName: "My PakPOS Store",
+        ownerName: "Admin",
+        phone: "",
+        address: "",
+        tax: 0,
+      };
     }
 
     const shopElem = document.getElementById("sidebar-shop-name");
     const roleElem = document.getElementById("sidebar-user-role");
-    
+
     if (shopElem) shopElem.innerText = currentBusiness.shopName || "My Store";
     if (roleElem) roleElem.innerText = userData.role || "Admin";
 
@@ -399,15 +442,17 @@ const loadUserProfileAndBusiness = async () => {
     const setShopPhone = document.getElementById("set-shop-phone");
     const setShopAddress = document.getElementById("set-shop-address");
     const setShopTax = document.getElementById("set-shop-tax");
-    
+
     if (setShopName) setShopName.value = currentBusiness.shopName || "";
     if (setShopPhone) setShopPhone.value = currentBusiness.phone || "";
     if (setShopAddress) setShopAddress.value = currentBusiness.address || "";
     if (setShopTax) setShopTax.value = currentBusiness.tax || 0;
-
   } catch (err) {
     if (err.code === "permission-denied") {
-      showToast("Firebase Rule Error: Update Firestore Rules in console.", "error");
+      showToast(
+        "Firebase Rule Error: Update Firestore Rules in console.",
+        "error",
+      );
     } else {
       showToast("Error loading shop profile: " + err.message, "error");
     }
@@ -419,13 +464,15 @@ const navigateTo = (pageId) => {
   const navLinks = document.querySelectorAll(".sidebar-nav a");
   const title = document.getElementById("page-title");
 
-  pages.forEach(p => p.classList.remove("active"));
-  navLinks.forEach(l => l.classList.remove("active"));
+  pages.forEach((p) => p.classList.remove("active"));
+  navLinks.forEach((l) => l.classList.remove("active"));
 
   const targetPage = document.getElementById(`page-${pageId}`);
   if (targetPage) targetPage.classList.add("active");
 
-  const activeLink = document.querySelector(`.sidebar-nav a[data-page="${pageId}"]`);
+  const activeLink = document.querySelector(
+    `.sidebar-nav a[data-page="${pageId}"]`,
+  );
   if (activeLink) activeLink.classList.add("active");
 
   if (title) {
@@ -439,7 +486,7 @@ const navigateTo = (pageId) => {
       suppliers: "Suppliers Directory",
       expenses: "Expense Tracker",
       reports: "Financial Reports",
-      settings: "Store Settings"
+      settings: "Store Settings",
     };
     title.innerText = titles[pageId] || "Dashboard";
   }
@@ -449,7 +496,7 @@ const navigateTo = (pageId) => {
 };
 
 const initNavigation = () => {
-  document.querySelectorAll(".sidebar-nav a").forEach(link => {
+  document.querySelectorAll(".sidebar-nav a").forEach((link) => {
     link.addEventListener("click", (e) => {
       e.preventDefault();
       const page = link.getAttribute("data-page");
@@ -457,7 +504,9 @@ const initNavigation = () => {
     });
   });
 
-  document.getElementById("quick-pos-btn")?.addEventListener("click", () => navigateTo("pos"));
+  document
+    .getElementById("quick-pos-btn")
+    ?.addEventListener("click", () => navigateTo("pos"));
 
   const hamburger = document.getElementById("mobile-hamburger");
   const closeBtn = document.getElementById("sidebar-close-btn");
@@ -483,8 +532,8 @@ const initNavigation = () => {
   themeToggle?.addEventListener("click", () => {
     document.body.classList.toggle("dark-mode");
     const isDark = document.body.classList.contains("dark-mode");
-    themeToggle.innerHTML = isDark 
-      ? `<i class="fa-solid fa-sun"></i> <span>Light Mode</span>` 
+    themeToggle.innerHTML = isDark
+      ? `<i class="fa-solid fa-sun"></i> <span>Light Mode</span>`
       : `<i class="fa-solid fa-moon"></i> <span>Dark Mode</span>`;
   });
 };
@@ -511,81 +560,116 @@ const initAppListeners = () => {
     });
   }
 
-  document.getElementById("pos-discount-input")?.addEventListener("input", calculateCartTotals);
-  document.getElementById("pos-tax-input")?.addEventListener("input", calculateCartTotals);
-  document.getElementById("pos-paid-amount")?.addEventListener("input", calculateCartTotals);
+  document
+    .getElementById("pos-discount-input")
+    ?.addEventListener("input", calculateCartTotals);
+  document
+    .getElementById("pos-tax-input")
+    ?.addEventListener("input", calculateCartTotals);
+  document
+    .getElementById("pos-paid-amount")
+    ?.addEventListener("input", calculateCartTotals);
   document.getElementById("pos-clear-cart")?.addEventListener("click", () => {
     state.cart = [];
     renderCart();
   });
 
   // Print preview of current cart (without completing sale)
-  document.getElementById('pos-print-preview-btn')?.addEventListener('click', () => {
-    const format = (document.getElementById('pos-print-format')?.value) || 'thermal';
-    if (!state.cart || state.cart.length === 0) { showToast('Cart is empty', 'error'); return; }
+  document
+    .getElementById("pos-print-preview-btn")
+    ?.addEventListener("click", () => {
+      const format =
+        document.getElementById("pos-print-format")?.value || "thermal";
+      if (!state.cart || state.cart.length === 0) {
+        showToast("Cart is empty", "error");
+        return;
+      }
 
-    // Build temporary saleData object from current cart for preview
-    let subtotal = 0;
-    const saleItems = state.cart.map(item => {
-      const normalizedQty = normalizeToStandardUnit(item.qty, item.unit);
-      const lineTotal = normalizedQty * item.sellingPrice;
-      subtotal += lineTotal;
-      return Object.assign({}, item, { normalizedQty, lineTotal });
-    });
-    const discount = parseFloat(document.getElementById('pos-discount-input')?.value) || 0;
-    const taxPct = parseFloat(document.getElementById('pos-tax-input')?.value) || 0;
-    const taxAmount = (subtotal - discount) * (taxPct / 100);
-    const grandTotal = Math.max(0, subtotal - discount + taxAmount);
-    const paidAmount = parseFloat(document.getElementById('pos-paid-amount')?.value) || 0;
-    const balanceDue = grandTotal > paidAmount ? grandTotal - paidAmount : 0;
-    const customerId = document.getElementById('pos-customer-select')?.value || 'WALKIN';
-    const customerObj = state.customers.find(c => c.id === customerId);
-    const customerName = customerObj ? customerObj.name : 'Walk-in Customer';
-
-    const salePreview = {
-      invoiceNumber: 'INV-' + Math.floor(1000 + Math.random() * 9000),
-      customerName,
-      items: saleItems,
-      subtotal,
-      discount,
-      taxAmount,
-      grandTotal,
-      paidAmount,
-      balanceDue,
-      paymentMethod: document.getElementById('pos-payment-method')?.value || 'Cash'
-    };
-
-    const printWindow = window.open('', '_blank', 'width=400,height=600');
-    populatePrintWindowContent(printWindow, salePreview, format, false);
-  });
-
-  document.getElementById("settings-form")?.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    toggleLoader(true, "Saving Settings...");
-    try {
-      const shopName = document.getElementById("set-shop-name").value;
-      const phone = document.getElementById("set-shop-phone").value;
-      const address = document.getElementById("set-shop-address").value;
-      const tax = parseFloat(document.getElementById("set-shop-tax").value) || 0;
-
-      await updateDoc(doc(db, "businesses", businessId), {
-        shopName, phone, address, tax
+      // Build temporary saleData object from current cart for preview
+      let subtotal = 0;
+      const saleItems = state.cart.map((item) => {
+        const normalizedQty = normalizeToStandardUnit(item.qty, item.unit);
+        const lineTotal = normalizedQty * item.sellingPrice;
+        subtotal += lineTotal;
+        return Object.assign({}, item, { normalizedQty, lineTotal });
       });
-      showToast("Settings updated successfully!", "success");
-      loadUserProfileAndBusiness();
-    } catch (err) {
-      showToast(err.message, "error");
-    } finally {
-      toggleLoader(false);
-    }
-  });
+      const discount =
+        parseFloat(document.getElementById("pos-discount-input")?.value) || 0;
+      const taxPct =
+        parseFloat(document.getElementById("pos-tax-input")?.value) || 0;
+      const taxAmount = (subtotal - discount) * (taxPct / 100);
+      const grandTotal = Math.max(0, subtotal - discount + taxAmount);
+      const paidAmount =
+        parseFloat(document.getElementById("pos-paid-amount")?.value) || 0;
+      const balanceDue = grandTotal > paidAmount ? grandTotal - paidAmount : 0;
+      const customerId =
+        document.getElementById("pos-customer-select")?.value || "WALKIN";
+      const customerObj = state.customers.find((c) => c.id === customerId);
+      const customerName = customerObj ? customerObj.name : "Walk-in Customer";
 
-  document.getElementById("load-demo-data-btn")?.addEventListener("click", seedDemoData);
-  document.getElementById("export-products-csv")?.addEventListener("click", exportProductsCSV);
-  document.getElementById("export-sales-csv")?.addEventListener("click", exportSalesCSV);
-  document.getElementById("add-expense-btn")?.addEventListener("click", () => openExpenseFormModal());
-  document.getElementById("new-purchase-btn")?.addEventListener("click", () => openPurchaseFormModal());
-  document.getElementById("add-supplier-btn")?.addEventListener("click", () => openSupplierFormModal());
+      const salePreview = {
+        invoiceNumber: "INV-" + Math.floor(1000 + Math.random() * 9000),
+        customerName,
+        items: saleItems,
+        subtotal,
+        discount,
+        taxAmount,
+        grandTotal,
+        paidAmount,
+        balanceDue,
+        paymentMethod:
+          document.getElementById("pos-payment-method")?.value || "Cash",
+      };
+
+      const printWindow = window.open("", "_blank", "width=400,height=600");
+      populatePrintWindowContent(printWindow, salePreview, format, false);
+    });
+
+  document
+    .getElementById("settings-form")
+    ?.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      toggleLoader(true, "Saving Settings...");
+      try {
+        const shopName = document.getElementById("set-shop-name").value;
+        const phone = document.getElementById("set-shop-phone").value;
+        const address = document.getElementById("set-shop-address").value;
+        const tax =
+          parseFloat(document.getElementById("set-shop-tax").value) || 0;
+
+        await updateDoc(doc(db, "businesses", businessId), {
+          shopName,
+          phone,
+          address,
+          tax,
+        });
+        showToast("Settings updated successfully!", "success");
+        loadUserProfileAndBusiness();
+      } catch (err) {
+        showToast(err.message, "error");
+      } finally {
+        toggleLoader(false);
+      }
+    });
+
+  document
+    .getElementById("load-demo-data-btn")
+    ?.addEventListener("click", seedDemoData);
+  document
+    .getElementById("export-products-csv")
+    ?.addEventListener("click", exportProductsCSV);
+  document
+    .getElementById("export-sales-csv")
+    ?.addEventListener("click", exportSalesCSV);
+  document
+    .getElementById("add-expense-btn")
+    ?.addEventListener("click", () => openExpenseFormModal());
+  document
+    .getElementById("new-purchase-btn")
+    ?.addEventListener("click", () => openPurchaseFormModal());
+  document
+    .getElementById("add-supplier-btn")
+    ?.addEventListener("click", () => openSupplierFormModal());
 
   const posCustSearch = document.getElementById("pos-customer-search");
   if (posCustSearch) {
@@ -594,70 +678,80 @@ const initAppListeners = () => {
       const select = document.getElementById("pos-customer-select");
       if (!select) return;
       select.innerHTML = `<option value="WALKIN">Walk-in Customer (Grahak)</option>`;
-      state.customers.filter(c => (c.name || '').toLowerCase().includes(q) || (c.phone||'').toLowerCase().includes(q)).forEach(c => {
-        select.innerHTML += `<option value="${c.id}">${c.name} (${c.phone || 'No Phone'}) - Bal: ${formatCurrency(c.balance)}</option>`;
-      });
+      state.customers
+        .filter(
+          (c) =>
+            (c.name || "").toLowerCase().includes(q) ||
+            (c.phone || "").toLowerCase().includes(q),
+        )
+        .forEach((c) => {
+          select.innerHTML += `<option value="${c.id}">${c.name} (${c.phone || "No Phone"}) - Bal: ${formatCurrency(c.balance)}</option>`;
+        });
     });
   }
 
-  document.getElementById("pos-add-customer-btn")?.addEventListener("click", () => {
-    document.getElementById("add-customer-btn")?.click();
-  });
+  document
+    .getElementById("pos-add-customer-btn")
+    ?.addEventListener("click", () => {
+      document.getElementById("add-customer-btn")?.click();
+    });
 
-  document.getElementById("generate-report-btn")?.addEventListener("click", generateReport);
+  document
+    .getElementById("generate-report-btn")
+    ?.addEventListener("click", generateReport);
 
   // --- Mobile POS cart drawer toggle ---
   const createMobileCartToggle = () => {
     // Only create if not present
-    if (document.getElementById('cart-toggle-btn')) return;
+    if (document.getElementById("cart-toggle-btn")) return;
 
-    const btn = document.createElement('button');
-    btn.id = 'cart-toggle-btn';
-    btn.className = 'cart-toggle-btn mobile-only';
+    const btn = document.createElement("button");
+    btn.id = "cart-toggle-btn";
+    btn.className = "cart-toggle-btn mobile-only";
     btn.innerHTML = `<i class="fa-solid fa-cart-shopping"></i> Cart`;
     document.body.appendChild(btn);
 
-    const overlay = document.createElement('div');
-    overlay.id = 'cart-overlay';
-    overlay.className = 'cart-overlay';
+    const overlay = document.createElement("div");
+    overlay.id = "cart-overlay";
+    overlay.className = "cart-overlay";
     document.body.appendChild(overlay);
 
-    const posRight = document.querySelector('.pos-right');
+    const posRight = document.querySelector(".pos-right");
     if (!posRight) return;
 
     const openCart = () => {
-      posRight.classList.add('open');
-      overlay.classList.add('open');
+      posRight.classList.add("open");
+      overlay.classList.add("open");
     };
     const closeCart = () => {
-      posRight.classList.remove('open');
-      overlay.classList.remove('open');
+      posRight.classList.remove("open");
+      overlay.classList.remove("open");
     };
 
-    btn.addEventListener('click', (e) => {
+    btn.addEventListener("click", (e) => {
       e.stopPropagation();
-      if (posRight.classList.contains('open')) closeCart();
+      if (posRight.classList.contains("open")) closeCart();
       else openCart();
     });
 
-    overlay.addEventListener('click', () => closeCart());
+    overlay.addEventListener("click", () => closeCart());
 
     // Close cart when navigating away from POS page
-    document.querySelectorAll('.sidebar-nav a').forEach(link => {
-      link.addEventListener('click', () => closeCart());
+    document.querySelectorAll(".sidebar-nav a").forEach((link) => {
+      link.addEventListener("click", () => closeCart());
     });
 
     // Auto-show/hide based on viewport
     const checkViewport = () => {
       if (window.innerWidth <= 600) {
-        btn.classList.remove('hidden');
+        btn.classList.remove("hidden");
       } else {
-        btn.classList.add('hidden');
+        btn.classList.add("hidden");
         closeCart();
       }
     };
 
-    window.addEventListener('resize', checkViewport);
+    window.addEventListener("resize", checkViewport);
     checkViewport();
   };
 
@@ -678,43 +772,45 @@ document.getElementById("login-form")?.addEventListener("submit", async (e) => {
   }
 });
 
-document.getElementById("register-form")?.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  toggleLoader(true, "Registering Store...");
-  try {
-    const name = document.getElementById("reg-name").value;
-    const shopName = document.getElementById("reg-shop").value;
-    const email = document.getElementById("reg-email").value;
-    const pass = document.getElementById("reg-password").value;
+document
+  .getElementById("register-form")
+  ?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    toggleLoader(true, "Registering Store...");
+    try {
+      const name = document.getElementById("reg-name").value;
+      const shopName = document.getElementById("reg-shop").value;
+      const email = document.getElementById("reg-email").value;
+      const pass = document.getElementById("reg-password").value;
 
-    const userCred = await createUserWithEmailAndPassword(auth, email, pass);
-    const uid = userCred.user.uid;
-    const newBizRef = doc(collection(db, "businesses"));
-    
-    await setDoc(newBizRef, {
-      shopName,
-      ownerName: name,
-      phone: "",
-      address: "",
-      tax: 0,
-      createdAt: serverTimestamp()
-    });
+      const userCred = await createUserWithEmailAndPassword(auth, email, pass);
+      const uid = userCred.user.uid;
+      const newBizRef = doc(collection(db, "businesses"));
 
-    await setDoc(doc(db, "users", uid), {
-      uid,
-      name,
-      email,
-      businessId: newBizRef.id,
-      role: "Admin"
-    });
+      await setDoc(newBizRef, {
+        shopName,
+        ownerName: name,
+        phone: "",
+        address: "",
+        tax: 0,
+        createdAt: serverTimestamp(),
+      });
 
-    showToast("Store setup successful!", "success");
-  } catch (err) {
-    showToast(err.message, "error");
-  } finally {
-    toggleLoader(false);
-  }
-});
+      await setDoc(doc(db, "users", uid), {
+        uid,
+        name,
+        email,
+        businessId: newBizRef.id,
+        role: "Admin",
+      });
+
+      showToast("Store setup successful!", "success");
+    } catch (err) {
+      showToast(err.message, "error");
+    } finally {
+      toggleLoader(false);
+    }
+  });
 
 document.getElementById("show-register")?.addEventListener("click", () => {
   document.getElementById("login-form")?.classList.add("hidden");
@@ -726,7 +822,9 @@ document.getElementById("show-login")?.addEventListener("click", () => {
   document.getElementById("login-form")?.classList.remove("hidden");
 });
 
-document.getElementById("logout-btn")?.addEventListener("click", () => signOut(auth));
+document
+  .getElementById("logout-btn")
+  ?.addEventListener("click", () => signOut(auth));
 
 // ==========================================================================
 // 5. FIRESTORE REAL-TIME SUBSCRIPTIONS
@@ -736,61 +834,122 @@ const setupRealtimeListeners = () => {
 
   const handleErr = (err) => {
     if (err.code === "permission-denied") {
-      showToast("Access Denied: Please check Firestore Rules in Firebase Console.", "error");
+      showToast(
+        "Access Denied: Please check Firestore Rules in Firebase Console.",
+        "error",
+      );
     }
   };
 
-  const qProd = query(collection(db, "products"), where("businessId", "==", businessId));
-  onSnapshot(qProd, (snapshot) => {
-    state.products = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderProductsTable();
-    renderPosProducts();
-    populateCategoryDropdowns();
-    renderCategoryChips();
-    updateDashboardMetrics();
-  }, handleErr);
+  const qProd = query(
+    collection(db, "products"),
+    where("businessId", "==", businessId),
+  );
+  onSnapshot(
+    qProd,
+    (snapshot) => {
+      state.products = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      renderProductsTable();
+      renderPosProducts();
+      populateCategoryDropdowns();
+      renderCategoryChips();
+      updateDashboardMetrics();
+    },
+    handleErr,
+  );
 
-  const qCust = query(collection(db, "customers"), where("businessId", "==", businessId));
-  onSnapshot(qCust, (snapshot) => {
-    state.customers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderCustomersTable();
-    renderPosCustomerDropdown();
-  }, handleErr);
+  const qCust = query(
+    collection(db, "customers"),
+    where("businessId", "==", businessId),
+  );
+  onSnapshot(
+    qCust,
+    (snapshot) => {
+      state.customers = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      renderCustomersTable();
+      renderPosCustomerDropdown();
+    },
+    handleErr,
+  );
 
-  const qSupp = query(collection(db, "suppliers"), where("businessId", "==", businessId));
-  onSnapshot(qSupp, (snapshot) => {
-    state.suppliers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderSuppliersTable();
-  }, handleErr);
+  const qSupp = query(
+    collection(db, "suppliers"),
+    where("businessId", "==", businessId),
+  );
+  onSnapshot(
+    qSupp,
+    (snapshot) => {
+      state.suppliers = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      renderSuppliersTable();
+    },
+    handleErr,
+  );
 
-  const qSales = query(collection(db, "sales"), where("businessId", "==", businessId));
-  onSnapshot(qSales, (snapshot) => {
-    state.sales = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderSalesHistoryTable();
-    updateDashboardMetrics();
-    renderCharts();
-  }, handleErr);
+  const qSales = query(
+    collection(db, "sales"),
+    where("businessId", "==", businessId),
+  );
+  onSnapshot(
+    qSales,
+    (snapshot) => {
+      state.sales = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      renderSalesHistoryTable();
+      updateDashboardMetrics();
+      renderCharts();
+    },
+    handleErr,
+  );
 
-  const qPurch = query(collection(db, "purchases"), where("businessId", "==", businessId));
-  onSnapshot(qPurch, (snapshot) => {
-    state.purchases = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderPurchasesTable();
-    updateDashboardMetrics();
-  }, handleErr);
+  const qPurch = query(
+    collection(db, "purchases"),
+    where("businessId", "==", businessId),
+  );
+  onSnapshot(
+    qPurch,
+    (snapshot) => {
+      state.purchases = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      renderPurchasesTable();
+      updateDashboardMetrics();
+    },
+    handleErr,
+  );
 
-  const qExp = query(collection(db, "expenses"), where("businessId", "==", businessId));
-  onSnapshot(qExp, (snapshot) => {
-    state.expenses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-    renderExpensesTable();
-  }, handleErr);
+  const qExp = query(
+    collection(db, "expenses"),
+    where("businessId", "==", businessId),
+  );
+  onSnapshot(
+    qExp,
+    (snapshot) => {
+      state.expenses = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      renderExpensesTable();
+    },
+    handleErr,
+  );
 };
 
 const populateCategoryDropdowns = () => {
   const invSelect = document.getElementById("product-category-filter");
   const posSelect = document.getElementById("pos-category-filter");
-  
-  const options = `<option value="ALL">All Categories</option>` + 
-    state.categories.map(c => `<option value="${c}">${c}</option>`).join("");
+
+  const options =
+    `<option value="ALL">All Categories</option>` +
+    state.categories.map((c) => `<option value="${c}">${c}</option>`).join("");
 
   if (invSelect) invSelect.innerHTML = options;
   if (posSelect) posSelect.innerHTML = options;
@@ -799,11 +958,15 @@ const populateCategoryDropdowns = () => {
 const renderCategoryChips = () => {
   const container = document.getElementById("pos-category-chips");
   if (!container) return;
-  
+
   const cats = ["ALL", ...state.categories];
-  container.innerHTML = cats.map(c => `
-    <span class="chip ${state.selectedCategory === c ? 'active' : ''}" onclick="window.selectCategoryChip('${c}')">${c}</span>
-  `).join("");
+  container.innerHTML = cats
+    .map(
+      (c) => `
+    <span class="chip ${state.selectedCategory === c ? "active" : ""}" onclick="window.selectCategoryChip('${c}')">${c}</span>
+  `,
+    )
+    .join("");
 };
 
 window.selectCategoryChip = (cat) => {
@@ -819,16 +982,18 @@ const renderSalesHistoryTable = () => {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  state.sales.forEach(s => {
+  state.sales.forEach((s) => {
     const tr = document.createElement("tr");
-    const dateStr = s.createdAt?.toDate ? s.createdAt.toDate().toLocaleString() : "N/A";
+    const dateStr = s.createdAt?.toDate
+      ? s.createdAt.toDate().toLocaleString()
+      : "N/A";
     tr.innerHTML = `
       <td><strong>${s.invoiceNumber}</strong></td>
       <td>${dateStr}</td>
-      <td>${s.customerName || 'Walk-in'}</td>
+      <td>${s.customerName || "Walk-in"}</td>
       <td>${(s.items || []).length} items</td>
       <td><strong>${formatCurrency(s.grandTotal)}</strong></td>
-      <td><span class="chip">${s.paymentMethod || 'Cash'}</span></td>
+      <td><span class="chip">${s.paymentMethod || "Cash"}</span></td>
       <td><span class="chip bg-green" style="color:#fff;">Completed</span></td>
       <td>
         <button class="btn btn-sm btn-secondary" onclick='window.reprintInvoice(${JSON.stringify(s)})'><i class="fa-solid fa-print"></i></button>
@@ -839,7 +1004,8 @@ const renderSalesHistoryTable = () => {
 };
 
 window.reprintInvoice = (saleObj) => {
-  const format = (document.getElementById('pos-print-format')?.value) || 'thermal';
+  const format =
+    document.getElementById("pos-print-format")?.value || "thermal";
   const printWindow = window.open("", "_blank", "width=400,height=600");
   populatePrintWindowContent(printWindow, saleObj, format, true);
 };
@@ -849,11 +1015,13 @@ const renderPurchasesTable = () => {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  state.purchases.forEach(p => {
+  state.purchases.forEach((p) => {
     const tr = document.createElement("tr");
-    const dateStr = p.createdAt?.toDate ? p.createdAt.toDate().toLocaleDateString() : "N/A";
+    const dateStr = p.createdAt?.toDate
+      ? p.createdAt.toDate().toLocaleDateString()
+      : "N/A";
     tr.innerHTML = `
-      <td><strong>${p.invoiceNumber || 'PUR-001'}</strong></td>
+      <td><strong>${p.invoiceNumber || "PUR-001"}</strong></td>
       <td>${dateStr}</td>
       <td>${p.supplierName}</td>
       <td>${formatCurrency(p.totalAmount)}</td>
@@ -873,9 +1041,11 @@ const renderExpensesTable = () => {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  state.expenses.forEach(e => {
+  state.expenses.forEach((e) => {
     const tr = document.createElement("tr");
-    const dateStr = e.createdAt?.toDate ? e.createdAt.toDate().toLocaleDateString() : "N/A";
+    const dateStr = e.createdAt?.toDate
+      ? e.createdAt.toDate().toLocaleDateString()
+      : "N/A";
     tr.innerHTML = `
       <td>${dateStr}</td>
       <td><strong>${e.title}</strong></td>
@@ -891,7 +1061,7 @@ const renderExpensesTable = () => {
 };
 
 window.editExpenseModal = (id) => {
-  const e = state.expenses.find(x => x.id === id);
+  const e = state.expenses.find((x) => x.id === id);
   if (e) openExpenseFormModal(e);
 };
 
@@ -906,36 +1076,40 @@ window.deleteExpense = async (id) => {
 // 6. DASHBOARD & CHARTS MODULE
 // ==========================================================================
 const updateDashboardMetrics = () => {
-  const todayStr = new Date().toISOString().split('T')[0];
-  
+  const todayStr = new Date().toISOString().split("T")[0];
+
   let todaySalesTotal = 0;
   let todayProfitTotal = 0;
   let todayOrdersCount = 0;
 
-  state.sales.forEach(sale => {
-    const saleDate = sale.createdAt?.toDate ? sale.createdAt.toDate().toISOString().split('T')[0] : '';
+  state.sales.forEach((sale) => {
+    const saleDate = sale.createdAt?.toDate
+      ? sale.createdAt.toDate().toISOString().split("T")[0]
+      : "";
     if (saleDate === todayStr) {
-      todaySalesTotal += (sale.grandTotal || 0);
-      todayProfitTotal += (sale.totalProfit || 0);
+      todaySalesTotal += sale.grandTotal || 0;
+      todayProfitTotal += sale.totalProfit || 0;
       todayOrdersCount++;
     }
   });
 
   let todayPurchasesTotal = 0;
-  state.purchases.forEach(purch => {
-    const purchDate = purch.createdAt?.toDate ? purch.createdAt.toDate().toISOString().split('T')[0] : '';
-    if (purchDate === todayStr) todayPurchasesTotal += (purch.totalAmount || 0);
+  state.purchases.forEach((purch) => {
+    const purchDate = purch.createdAt?.toDate
+      ? purch.createdAt.toDate().toISOString().split("T")[0]
+      : "";
+    if (purchDate === todayStr) todayPurchasesTotal += purch.totalAmount || 0;
   });
 
   let lowStockCount = 0;
   let totalStockVal = 0;
-  state.products.forEach(p => {
+  state.products.forEach((p) => {
     if (p.currentStock <= (p.minStockAlert || 5)) lowStockCount++;
-    totalStockVal += (p.currentStock * p.purchasePrice);
+    totalStockVal += p.currentStock * p.purchasePrice;
   });
 
   let totalReceivables = 0;
-  state.customers.forEach(c => totalReceivables += (c.balance || 0));
+  state.customers.forEach((c) => (totalReceivables += c.balance || 0));
 
   const setElem = (id, val) => {
     const elem = document.getElementById(id);
@@ -953,41 +1127,47 @@ const updateDashboardMetrics = () => {
 };
 
 const renderCharts = () => {
-  if (typeof Chart === 'undefined') return;
+  if (typeof Chart === "undefined") return;
 
   const salesCanvas = document.getElementById("sales-chart");
   if (salesCanvas) {
     const ctxSales = salesCanvas.getContext("2d");
     const days = [];
     const salesData = [];
-    
+
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
       d.setDate(d.getDate() - i);
-      const dateStr = d.toISOString().split('T')[0];
-      days.push(d.toLocaleDateString('en-PK', { weekday: 'short' }));
-      
+      const dateStr = d.toISOString().split("T")[0];
+      days.push(d.toLocaleDateString("en-PK", { weekday: "short" }));
+
       const dayTotal = state.sales
-        .filter(s => s.createdAt?.toDate && s.createdAt.toDate().toISOString().split('T')[0] === dateStr)
+        .filter(
+          (s) =>
+            s.createdAt?.toDate &&
+            s.createdAt.toDate().toISOString().split("T")[0] === dateStr,
+        )
         .reduce((acc, curr) => acc + curr.grandTotal, 0);
       salesData.push(dayTotal);
     }
 
     if (salesChartInstance) salesChartInstance.destroy();
     salesChartInstance = new Chart(ctxSales, {
-      type: 'line',
+      type: "line",
       data: {
         labels: days,
-        datasets: [{
-          label: 'Daily Sales (PKR)',
-          data: salesData,
-          borderColor: '#0f766e',
-          backgroundColor: 'rgba(15, 118, 110, 0.1)',
-          fill: true,
-          tension: 0.3
-        }]
+        datasets: [
+          {
+            label: "Daily Sales (PKR)",
+            data: salesData,
+            borderColor: "#0f766e",
+            backgroundColor: "rgba(15, 118, 110, 0.1)",
+            fill: true,
+            tension: 0.3,
+          },
+        ],
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: { responsive: true, maintainAspectRatio: false },
     });
   }
 
@@ -995,10 +1175,11 @@ const renderCharts = () => {
   if (topCanvas) {
     const ctxTop = topCanvas.getContext("2d");
     const productSalesMap = {};
-    
-    state.sales.forEach(s => {
-      (s.items || []).forEach(item => {
-        productSalesMap[item.name] = (productSalesMap[item.name] || 0) + item.lineTotal;
+
+    state.sales.forEach((s) => {
+      (s.items || []).forEach((item) => {
+        productSalesMap[item.name] =
+          (productSalesMap[item.name] || 0) + item.lineTotal;
       });
     });
 
@@ -1008,16 +1189,18 @@ const renderCharts = () => {
 
     if (topProductsChartInstance) topProductsChartInstance.destroy();
     topProductsChartInstance = new Chart(ctxTop, {
-      type: 'bar',
+      type: "bar",
       data: {
-        labels: sortedProducts.map(p => p[0]),
-        datasets: [{
-          label: 'Revenue (PKR)',
-          data: sortedProducts.map(p => p[1]),
-          backgroundColor: '#16a34a'
-        }]
+        labels: sortedProducts.map((p) => p[0]),
+        datasets: [
+          {
+            label: "Revenue (PKR)",
+            data: sortedProducts.map((p) => p[1]),
+            backgroundColor: "#16a34a",
+          },
+        ],
       },
-      options: { responsive: true, maintainAspectRatio: false }
+      options: { responsive: true, maintainAspectRatio: false },
     });
   }
 };
@@ -1030,12 +1213,14 @@ const renderPosProducts = () => {
   if (!grid) return;
   grid.innerHTML = "";
 
-  const filtered = state.products.filter(p => {
-    const matchesCat = state.selectedCategory === "ALL" || p.category === state.selectedCategory;
+  const filtered = state.products.filter((p) => {
+    const matchesCat =
+      state.selectedCategory === "ALL" || p.category === state.selectedCategory;
     const q = state.posSearchQuery.toLowerCase();
-    const matchesSearch = p.name.toLowerCase().includes(q) || 
-                          (p.barcode && p.barcode.includes(q)) || 
-                          (p.sku && p.sku.toLowerCase().includes(q));
+    const matchesSearch =
+      p.name.toLowerCase().includes(q) ||
+      (p.barcode && p.barcode.includes(q)) ||
+      (p.sku && p.sku.toLowerCase().includes(q));
     return matchesCat && matchesSearch;
   });
 
@@ -1044,7 +1229,7 @@ const renderPosProducts = () => {
     return;
   }
 
-  filtered.forEach(p => {
+  filtered.forEach((p) => {
     const card = document.createElement("div");
     card.className = "pos-product-card";
     card.onclick = () => addToCart(p);
@@ -1060,10 +1245,10 @@ const renderPosProducts = () => {
 };
 
 const addToCart = (product) => {
-  const existingIndex = state.cart.findIndex(item => item.id === product.id);
-  
+  const existingIndex = state.cart.findIndex((item) => item.id === product.id);
+
   if (existingIndex > -1) {
-    state.cart[existingIndex].qty += (product.unit === "Gram" ? 250 : 1);
+    state.cart[existingIndex].qty += product.unit === "Gram" ? 250 : 1;
   } else {
     const initQty = product.unit === "Gram" ? 250 : 1;
     state.cart.push({
@@ -1072,7 +1257,7 @@ const addToCart = (product) => {
       unit: product.unit,
       purchasePrice: product.purchasePrice,
       sellingPrice: product.sellingPrice,
-      qty: initQty
+      qty: initQty,
     });
   }
   renderCart();
@@ -1092,7 +1277,7 @@ const renderCart = () => {
   state.cart.forEach((item, index) => {
     const el = document.createElement("div");
     el.className = "cart-item";
-    
+
     const normalizedQty = normalizeToStandardUnit(item.qty, item.unit);
     const lineTotal = normalizedQty * item.sellingPrice;
 
@@ -1102,7 +1287,7 @@ const renderCart = () => {
         <div class="cart-item-unit-price">${formatCurrency(item.sellingPrice)} / ${item.unit}</div>
       </div>
       <div class="cart-item-qty-controls">
-        <input type="number" step="${item.unit === 'KG' || item.unit === 'Gram' ? '0.05' : '1'}" 
+        <input type="number" step="${item.unit === "KG" || item.unit === "Gram" ? "0.05" : "1"}" 
                value="${item.qty}" onchange="window.updateCartQty(${index}, this.value)">
         <span style="font-size: 0.75rem;">${item.unit}</span>
       </div>
@@ -1132,18 +1317,21 @@ window.removeCartItem = (index) => {
 
 const calculateCartTotals = () => {
   let subtotal = 0;
-  state.cart.forEach(item => {
+  state.cart.forEach((item) => {
     const normalizedQty = normalizeToStandardUnit(item.qty, item.unit);
     subtotal += normalizedQty * item.sellingPrice;
   });
 
-  const discount = parseFloat(document.getElementById("pos-discount-input")?.value) || 0;
-  const taxPct = parseFloat(document.getElementById("pos-tax-input")?.value) || 0;
-  
+  const discount =
+    parseFloat(document.getElementById("pos-discount-input")?.value) || 0;
+  const taxPct =
+    parseFloat(document.getElementById("pos-tax-input")?.value) || 0;
+
   const taxAmount = (subtotal - discount) * (taxPct / 100);
   const grandTotal = Math.max(0, subtotal - discount + taxAmount);
-  
-  const paidAmount = parseFloat(document.getElementById("pos-paid-amount")?.value) || 0;
+
+  const paidAmount =
+    parseFloat(document.getElementById("pos-paid-amount")?.value) || 0;
   const diff = paidAmount - grandTotal;
 
   const setVal = (id, val) => {
@@ -1164,109 +1352,167 @@ const calculateCartTotals = () => {
 };
 
 // CHECKOUT TRANSACTION
-document.getElementById("pos-checkout-btn")?.addEventListener("click", async () => {
-  if (state.cart.length === 0) {
-    showToast("Cart is empty!", "error");
-    return;
-  }
+document
+  .getElementById("pos-checkout-btn")
+  ?.addEventListener("click", async () => {
+    if (state.cart.length === 0) {
+      showToast("Cart is empty!", "error");
+      return;
+    }
 
-  // Open receipt window synchronously on user click to prevent popup blockers
-  const format = (document.getElementById('pos-print-format')?.value) || 'thermal';
-  const printWindow = window.open("", "_blank", "width=400,height=600");
+    // Open receipt window synchronously on user click to prevent popup blockers
+    const format =
+      document.getElementById("pos-print-format")?.value || "thermal";
+    const printWindow = window.open("", "_blank", "width=400,height=600");
 
-  toggleLoader(true, "Completing Sale & Updating Stock...");
-  
-  try {
-    let subtotal = 0;
-    let totalCost = 0;
-    
-    const saleItems = state.cart.map(item => {
-      const normalizedQty = normalizeToStandardUnit(item.qty, item.unit);
-      const lineTotal = normalizedQty * item.sellingPrice;
-      const lineCost = normalizedQty * item.purchasePrice;
-      
-      subtotal += lineTotal;
-      totalCost += lineCost;
+    toggleLoader(true, "Completing Sale & Updating Stock...");
 
-      return {
-        productId: item.id,
-        name: item.name,
-        unit: item.unit,
-        qty: item.qty,
-        normalizedQty,
-        sellingPrice: item.sellingPrice,
-        purchasePrice: item.purchasePrice,
-        lineTotal
-      };
-    });
+    try {
+      let subtotal = 0;
+      let totalCost = 0;
 
-    const discount = parseFloat(document.getElementById("pos-discount-input")?.value) || 0;
-    const taxPct = parseFloat(document.getElementById("pos-tax-input")?.value) || 0;
-    const taxAmount = (subtotal - discount) * (taxPct / 100);
-    const grandTotal = Math.max(0, subtotal - discount + taxAmount);
-    const paidAmount = parseFloat(document.getElementById("pos-paid-amount")?.value) || 0;
-    const balanceDue = grandTotal > paidAmount ? grandTotal - paidAmount : 0;
-    const totalProfit = grandTotal - totalCost;
+      const saleItems = state.cart.map((item) => {
+        const normalizedQty = normalizeToStandardUnit(item.qty, item.unit);
+        const lineTotal = normalizedQty * item.sellingPrice;
+        const lineCost = normalizedQty * item.purchasePrice;
 
-    const paymentMethod = document.getElementById("pos-payment-method")?.value || "Cash";
-    const customerId = document.getElementById("pos-customer-select")?.value || "WALKIN";
-    const customerObj = state.customers.find(c => c.id === customerId);
-    const customerName = customerObj ? customerObj.name : "Walk-in Customer";
+        subtotal += lineTotal;
+        totalCost += lineCost;
 
-    let generatedInvNum = "";
+        return {
+          productId: item.id,
+          name: item.name,
+          unit: item.unit,
+          qty: item.qty,
+          normalizedQty,
+          sellingPrice: item.sellingPrice,
+          purchasePrice: item.purchasePrice,
+          lineTotal,
+        };
+      });
 
-    await runTransaction(db, async (transaction) => {
-      // 1. All Reads First
-      const productDocsMap = new Map();
-      
-      for (const item of saleItems) {
-        const prodRef = doc(db, "products", item.productId);
-        const prodDoc = await transaction.get(prodRef);
-        
-        if (!prodDoc.exists()) throw new Error(`Product ${item.name} does not exist!`);
-        
-        const currentStock = prodDoc.data().currentStock;
-        if (currentStock < item.normalizedQty) {
-          throw new Error(`Insufficient stock for ${item.name}! Stock left: ${currentStock}`);
+      const discount =
+        parseFloat(document.getElementById("pos-discount-input")?.value) || 0;
+      const taxPct =
+        parseFloat(document.getElementById("pos-tax-input")?.value) || 0;
+      const taxAmount = (subtotal - discount) * (taxPct / 100);
+      const grandTotal = Math.max(0, subtotal - discount + taxAmount);
+      const paidAmount =
+        parseFloat(document.getElementById("pos-paid-amount")?.value) || 0;
+      const balanceDue = grandTotal > paidAmount ? grandTotal - paidAmount : 0;
+      const totalProfit = grandTotal - totalCost;
+
+      const paymentMethod =
+        document.getElementById("pos-payment-method")?.value || "Cash";
+      const customerId =
+        document.getElementById("pos-customer-select")?.value || "WALKIN";
+      const customerObj = state.customers.find((c) => c.id === customerId);
+      const customerName = customerObj ? customerObj.name : "Walk-in Customer";
+
+      let generatedInvNum = "";
+
+      await runTransaction(db, async (transaction) => {
+        // 1. All Reads First
+        const productDocsMap = new Map();
+
+        for (const item of saleItems) {
+          const prodRef = doc(db, "products", item.productId);
+          const prodDoc = await transaction.get(prodRef);
+
+          if (!prodDoc.exists())
+            throw new Error(`Product ${item.name} does not exist!`);
+
+          const currentStock = prodDoc.data().currentStock;
+          if (currentStock < item.normalizedQty) {
+            throw new Error(
+              `Insufficient stock for ${item.name}! Stock left: ${currentStock}`,
+            );
+          }
+
+          productDocsMap.set(item.productId, {
+            ref: prodRef,
+            stock: currentStock,
+          });
         }
-        
-        productDocsMap.set(item.productId, { ref: prodRef, stock: currentStock });
-      }
 
-      let customerDocData = null;
-      let custRef = null;
-      if (balanceDue > 0 && customerId !== "WALKIN") {
-        custRef = doc(db, "customers", customerId);
-        const custDoc = await transaction.get(custRef);
-        if (custDoc.exists()) {
-          customerDocData = custDoc.data();
+        let customerDocData = null;
+        let custRef = null;
+        if (balanceDue > 0 && customerId !== "WALKIN") {
+          custRef = doc(db, "customers", customerId);
+          const custDoc = await transaction.get(custRef);
+          if (custDoc.exists()) {
+            customerDocData = custDoc.data();
+          }
         }
-      }
 
-      const invoiceCounterRef = doc(db, "businesses", businessId, "counters", "invoices");
-      const invoiceCounterDoc = await transaction.get(invoiceCounterRef);
-      const nextInvoiceSequence = (invoiceCounterDoc.exists() ? invoiceCounterDoc.data().lastNumber || 0 : 0) + 1;
+        const invoiceCounterRef = doc(
+          db,
+          "businesses",
+          businessId,
+          "counters",
+          "invoices",
+        );
+        const invoiceCounterDoc = await transaction.get(invoiceCounterRef);
+        const nextInvoiceSequence =
+          (invoiceCounterDoc.exists()
+            ? invoiceCounterDoc.data().lastNumber || 0
+            : 0) + 1;
 
-      // 2. All Writes After Reads
-      for (const item of saleItems) {
-        const prodInfo = productDocsMap.get(item.productId);
-        const newStock = prodInfo.stock - item.normalizedQty;
-        transaction.update(prodInfo.ref, { currentStock: newStock, updatedAt: serverTimestamp() });
-      }
+        // 2. All Writes After Reads
+        for (const item of saleItems) {
+          const prodInfo = productDocsMap.get(item.productId);
+          const newStock = prodInfo.stock - item.normalizedQty;
+          transaction.update(prodInfo.ref, {
+            currentStock: newStock,
+            updatedAt: serverTimestamp(),
+          });
+        }
 
-      const now = new Date();
-      const invoiceDate = [now.getFullYear(), now.getMonth() + 1, now.getDate()]
-        .map((part) => String(part).padStart(2, "0"))
-        .join("");
-      generatedInvNum = `INV-${invoiceDate}-${String(nextInvoiceSequence).padStart(4, "0")}`;
-      const newSaleRef = doc(collection(db, "sales"));
+        const now = new Date();
+        const invoiceDate = [
+          now.getFullYear(),
+          now.getMonth() + 1,
+          now.getDate(),
+        ]
+          .map((part) => String(part).padStart(2, "0"))
+          .join("");
+        generatedInvNum = `INV-${invoiceDate}-${String(nextInvoiceSequence).padStart(4, "0")}`;
+        const newSaleRef = doc(collection(db, "sales"));
 
-      transaction.set(invoiceCounterRef, { lastNumber: nextInvoiceSequence }, { merge: true });
-      
-      transaction.set(newSaleRef, {
-        businessId,
+        transaction.set(
+          invoiceCounterRef,
+          { lastNumber: nextInvoiceSequence },
+          { merge: true },
+        );
+
+        transaction.set(newSaleRef, {
+          businessId,
+          invoiceNumber: generatedInvNum,
+          customerId,
+          customerName,
+          items: saleItems,
+          subtotal,
+          discount,
+          taxAmount,
+          grandTotal,
+          paidAmount,
+          balanceDue,
+          totalProfit,
+          paymentMethod,
+          cashierUid: currentUser.uid,
+          createdAt: serverTimestamp(),
+        });
+
+        if (custRef && customerDocData) {
+          const newBal = (customerDocData.balance || 0) + balanceDue;
+          transaction.update(custRef, { balance: newBal });
+        }
+      });
+
+      showToast("Sale completed successfully!", "success");
+
+      const saleReceiptData = {
         invoiceNumber: generatedInvNum,
-        customerId,
         customerName,
         items: saleItems,
         subtotal,
@@ -1275,47 +1521,24 @@ document.getElementById("pos-checkout-btn")?.addEventListener("click", async () 
         grandTotal,
         paidAmount,
         balanceDue,
-        totalProfit,
         paymentMethod,
-        cashierUid: currentUser.uid,
-        createdAt: serverTimestamp()
-      });
+      };
 
-      if (custRef && customerDocData) {
-        const newBal = (customerDocData.balance || 0) + balanceDue;
-        transaction.update(custRef, { balance: newBal });
-      }
-    });
+      populatePrintWindowContent(printWindow, saleReceiptData, format, true);
 
-    showToast("Sale completed successfully!", "success");
-    
-    const saleReceiptData = {
-      invoiceNumber: generatedInvNum,
-      customerName,
-      items: saleItems,
-      subtotal,
-      discount,
-      taxAmount,
-      grandTotal,
-      paidAmount,
-      balanceDue,
-      paymentMethod
-    };
-
-    populatePrintWindowContent(printWindow, saleReceiptData, format, true);
-
-    state.cart = [];
-    if (document.getElementById("pos-discount-input")) document.getElementById("pos-discount-input").value = 0;
-    if (document.getElementById("pos-paid-amount")) document.getElementById("pos-paid-amount").value = "";
-    renderCart();
-
-  } catch (err) {
-    if (printWindow) printWindow.close();
-    showToast(err.message, "error");
-  } finally {
-    toggleLoader(false);
-  }
-});
+      state.cart = [];
+      if (document.getElementById("pos-discount-input"))
+        document.getElementById("pos-discount-input").value = 0;
+      if (document.getElementById("pos-paid-amount"))
+        document.getElementById("pos-paid-amount").value = "";
+      renderCart();
+    } catch (err) {
+      if (printWindow) printWindow.close();
+      showToast(err.message, "error");
+    } finally {
+      toggleLoader(false);
+    }
+  });
 
 // ==========================================================================
 // 8. PRODUCT MANAGEMENT
@@ -1325,28 +1548,31 @@ const renderProductsTable = () => {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  const filter = document.getElementById("product-category-filter")?.value || "ALL";
-  const q = document.getElementById("product-search-input")?.value.toLowerCase() || "";
+  const filter =
+    document.getElementById("product-category-filter")?.value || "ALL";
+  const q =
+    document.getElementById("product-search-input")?.value.toLowerCase() || "";
 
-  const filtered = state.products.filter(p => {
+  const filtered = state.products.filter((p) => {
     const matchCat = filter === "ALL" || p.category === filter;
-    const matchQ = p.name.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q));
+    const matchQ =
+      p.name.toLowerCase().includes(q) || (p.barcode && p.barcode.includes(q));
     return matchCat && matchQ;
   });
 
-  filtered.forEach(p => {
+  filtered.forEach((p) => {
     const tr = document.createElement("tr");
     const isLow = p.currentStock <= (p.minStockAlert || 5);
-    
+
     tr.innerHTML = `
-      <td>${p.barcode || p.sku || 'N/A'}</td>
+      <td>${p.barcode || p.sku || "N/A"}</td>
       <td><strong>${p.name}</strong></td>
       <td><span class="chip">${p.category}</span></td>
       <td>${p.unit}</td>
       <td>${formatCurrency(p.purchasePrice)}</td>
       <td>${formatCurrency(p.sellingPrice)}</td>
       <td><strong>${p.currentStock}</strong> ${p.unit}</td>
-      <td><span class="chip ${isLow ? 'bg-red' : 'bg-green'}" style="color:#fff;">${isLow ? 'Low Stock' : 'In Stock'}</span></td>
+      <td><span class="chip ${isLow ? "bg-red" : "bg-green"}" style="color:#fff;">${isLow ? "Low Stock" : "In Stock"}</span></td>
       <td>
         <button class="btn btn-sm btn-secondary" onclick="window.editProductModal('${p.id}')"><i class="fa-solid fa-pen"></i></button>
         <button class="btn btn-sm btn-danger" onclick="window.deleteProduct('${p.id}')"><i class="fa-solid fa-trash"></i></button>
@@ -1364,27 +1590,27 @@ const openProductModal = (product = null) => {
   const modalContainer = document.getElementById("modal-container");
   const modalContent = document.getElementById("modal-content");
   if (!modalContainer || !modalContent) return;
-  
+
   modalContent.innerHTML = `
     <div class="modal-header">
-      <h3>${product ? 'Edit Product' : 'Add New Product'}</h3>
+      <h3>${product ? "Edit Product" : "Add New Product"}</h3>
       <button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <form id="product-form">
       <div class="modal-body">
         <div class="form-group">
           <label>Product Name *</label>
-          <input type="text" id="prod-name" value="${product ? product.name : ''}" required>
+          <input type="text" id="prod-name" value="${product ? product.name : ""}" required>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Barcode / SKU</label>
-            <input type="text" id="prod-barcode" value="${product ? (product.barcode || '') : ''}">
+            <input type="text" id="prod-barcode" value="${product ? product.barcode || "" : ""}">
           </div>
           <div class="form-group">
             <label>Category</label>
             <select id="prod-category">
-              ${state.categories.map(c => `<option value="${c}" ${product && product.category === c ? 'selected' : ''}>${c}</option>`).join('')}
+              ${state.categories.map((c) => `<option value="${c}" ${product && product.category === c ? "selected" : ""}>${c}</option>`).join("")}
             </select>
           </div>
         </div>
@@ -1392,27 +1618,27 @@ const openProductModal = (product = null) => {
           <div class="form-group">
             <label>Unit Type</label>
             <select id="prod-unit">
-              <option value="Piece" ${product && product.unit === 'Piece' ? 'selected' : ''}>Piece</option>
-              <option value="KG" ${product && product.unit === 'KG' ? 'selected' : ''}>KG (Kilogram)</option>
-              <option value="Gram" ${product && product.unit === 'Gram' ? 'selected' : ''}>Gram</option>
-              <option value="Liter" ${product && product.unit === 'Liter' ? 'selected' : ''}>Liter</option>
-              <option value="Box" ${product && product.unit === 'Box' ? 'selected' : ''}>Box</option>
-              <option value="Pack" ${product && product.unit === 'Pack' ? 'selected' : ''}>Pack</option>
+              <option value="Piece" ${product && product.unit === "Piece" ? "selected" : ""}>Piece</option>
+              <option value="KG" ${product && product.unit === "KG" ? "selected" : ""}>KG (Kilogram)</option>
+              <option value="Gram" ${product && product.unit === "Gram" ? "selected" : ""}>Gram</option>
+              <option value="Liter" ${product && product.unit === "Liter" ? "selected" : ""}>Liter</option>
+              <option value="Box" ${product && product.unit === "Box" ? "selected" : ""}>Box</option>
+              <option value="Pack" ${product && product.unit === "Pack" ? "selected" : ""}>Pack</option>
             </select>
           </div>
           <div class="form-group">
             <label>Current Stock</label>
-            <input type="number" step="0.01" id="prod-stock" value="${product ? product.currentStock : '0'}" required>
+            <input type="number" step="0.01" id="prod-stock" value="${product ? product.currentStock : "0"}" required>
           </div>
         </div>
         <div class="form-row">
           <div class="form-group">
             <label>Purchase Price (Cost)</label>
-            <input type="number" step="0.01" id="prod-cost" value="${product ? product.purchasePrice : '0'}" required>
+            <input type="number" step="0.01" id="prod-cost" value="${product ? product.purchasePrice : "0"}" required>
           </div>
           <div class="form-group">
             <label>Selling Price</label>
-            <input type="number" step="0.01" id="prod-price" value="${product ? product.sellingPrice : '0'}" required>
+            <input type="number" step="0.01" id="prod-price" value="${product ? product.sellingPrice : "0"}" required>
           </div>
         </div>
       </div>
@@ -1428,18 +1654,21 @@ const openProductModal = (product = null) => {
   document.getElementById("product-form").onsubmit = async (e) => {
     e.preventDefault();
     toggleLoader(true, "Saving product...");
-    
+
     const prodData = {
       businessId,
       name: document.getElementById("prod-name").value,
       barcode: document.getElementById("prod-barcode").value,
       category: document.getElementById("prod-category").value,
       unit: document.getElementById("prod-unit").value,
-      currentStock: parseFloat(document.getElementById("prod-stock").value) || 0,
-      purchasePrice: parseFloat(document.getElementById("prod-cost").value) || 0,
-      sellingPrice: parseFloat(document.getElementById("prod-price").value) || 0,
+      currentStock:
+        parseFloat(document.getElementById("prod-stock").value) || 0,
+      purchasePrice:
+        parseFloat(document.getElementById("prod-cost").value) || 0,
+      sellingPrice:
+        parseFloat(document.getElementById("prod-price").value) || 0,
       minStockAlert: 5,
-      updatedAt: serverTimestamp()
+      updatedAt: serverTimestamp(),
     };
 
     try {
@@ -1461,7 +1690,7 @@ const openProductModal = (product = null) => {
 };
 
 window.editProductModal = (id) => {
-  const p = state.products.find(item => item.id === id);
+  const p = state.products.find((item) => item.id === id);
   if (p) openProductModal(p);
 };
 
@@ -1484,13 +1713,13 @@ const renderCustomersTable = () => {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  state.customers.forEach(c => {
+  state.customers.forEach((c) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><strong>${c.name}</strong></td>
-      <td>${c.phone || 'N/A'}</td>
-      <td>${c.cnic || 'N/A'}</td>
-      <td><strong class="${c.balance > 0 ? 'text-red' : 'text-green'}">${formatCurrency(c.balance)}</strong></td>
+      <td>${c.phone || "N/A"}</td>
+      <td>${c.cnic || "N/A"}</td>
+      <td><strong class="${c.balance > 0 ? "text-red" : "text-green"}">${formatCurrency(c.balance)}</strong></td>
       <td>
         <button class="btn btn-sm btn-secondary" onclick="window.editCustomerModal('${c.id}')"><i class="fa-solid fa-pen"></i></button>
         <button class="btn btn-sm btn-accent" onclick="window.receiveCustomerPayment('${c.id}')"><i class="fa-solid fa-hand-holding-dollar"></i> Clear Udhaar</button>
@@ -1505,8 +1734,8 @@ const renderPosCustomerDropdown = () => {
   const select = document.getElementById("pos-customer-select");
   if (!select) return;
   select.innerHTML = `<option value="WALKIN">Walk-in Customer (Grahak)</option>`;
-  state.customers.forEach(c => {
-    select.innerHTML += `<option value="${c.id}">${c.name} (${c.phone || 'No Phone'}) - Bal: ${formatCurrency(c.balance)}</option>`;
+  state.customers.forEach((c) => {
+    select.innerHTML += `<option value="${c.id}">${c.name} (${c.phone || "No Phone"}) - Bal: ${formatCurrency(c.balance)}</option>`;
   });
 };
 
@@ -1521,14 +1750,25 @@ const openCustomerModal = (customer = null) => {
       name,
       phone: phone || "",
       balance: 0,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
     }).then(() => showToast("Customer added!", "success"));
   } else {
-    const newName = prompt("Edit Customer Name:", customer.name) || customer.name;
-    const newPhone = prompt("Edit Customer Phone:", customer.phone || "") || customer.phone || "";
-    const newCnic = prompt("Edit CNIC (optional):", customer.cnic || "") || customer.cnic || "";
-    updateDoc(doc(db, "customers", customer.id), { name: newName, phone: newPhone, cnic: newCnic, updatedAt: serverTimestamp() })
-      .then(() => showToast("Customer updated!", "success"));
+    const newName =
+      prompt("Edit Customer Name:", customer.name) || customer.name;
+    const newPhone =
+      prompt("Edit Customer Phone:", customer.phone || "") ||
+      customer.phone ||
+      "";
+    const newCnic =
+      prompt("Edit CNIC (optional):", customer.cnic || "") ||
+      customer.cnic ||
+      "";
+    updateDoc(doc(db, "customers", customer.id), {
+      name: newName,
+      phone: newPhone,
+      cnic: newCnic,
+      updatedAt: serverTimestamp(),
+    }).then(() => showToast("Customer updated!", "success"));
   }
 };
 
@@ -1540,26 +1780,26 @@ const openCustomerFormModal = (customer = null) => {
 
   modalContent.innerHTML = `
     <div class="modal-header">
-      <h3>${customer ? 'Edit Customer' : 'Add Customer'}</h3>
+      <h3>${customer ? "Edit Customer" : "Add Customer"}</h3>
       <button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <form id="customer-form">
       <div class="modal-body">
         <div class="form-group">
           <label>Full Name *</label>
-          <input type="text" id="cust-name" value="${customer ? customer.name : ''}" required>
+          <input type="text" id="cust-name" value="${customer ? customer.name : ""}" required>
         </div>
         <div class="form-group">
           <label>Phone</label>
-          <input type="text" id="cust-phone" value="${customer ? customer.phone || '' : ''}">
+          <input type="text" id="cust-phone" value="${customer ? customer.phone || "" : ""}">
         </div>
         <div class="form-group">
           <label>CNIC (optional)</label>
-          <input type="text" id="cust-cnic" value="${customer ? customer.cnic || '' : ''}">
+          <input type="text" id="cust-cnic" value="${customer ? customer.cnic || "" : ""}">
         </div>
         <div class="form-group">
           <label>Initial Balance (Udhaar)</label>
-          <input type="number" id="cust-balance" value="${customer ? (customer.balance||0) : 0}" step="0.01">
+          <input type="number" id="cust-balance" value="${customer ? customer.balance || 0 : 0}" step="0.01">
         </div>
       </div>
       <div class="modal-footer">
@@ -1569,31 +1809,34 @@ const openCustomerFormModal = (customer = null) => {
     </form>
   `;
 
-  modalContainer.classList.remove('hidden');
+  modalContainer.classList.remove("hidden");
 
-  document.getElementById('customer-form').onsubmit = async (e) => {
+  document.getElementById("customer-form").onsubmit = async (e) => {
     e.preventDefault();
-    toggleLoader(true, customer ? 'Updating customer...' : 'Saving customer...');
+    toggleLoader(
+      true,
+      customer ? "Updating customer..." : "Saving customer...",
+    );
     try {
       const data = {
         businessId,
-        name: document.getElementById('cust-name').value,
-        phone: document.getElementById('cust-phone').value || '',
-        cnic: document.getElementById('cust-cnic').value || '',
-        balance: parseFloat(document.getElementById('cust-balance').value) || 0,
-        updatedAt: serverTimestamp()
+        name: document.getElementById("cust-name").value,
+        phone: document.getElementById("cust-phone").value || "",
+        cnic: document.getElementById("cust-cnic").value || "",
+        balance: parseFloat(document.getElementById("cust-balance").value) || 0,
+        updatedAt: serverTimestamp(),
       };
       if (customer) {
-        await updateDoc(doc(db, 'customers', customer.id), data);
-        showToast('Customer updated!', 'success');
+        await updateDoc(doc(db, "customers", customer.id), data);
+        showToast("Customer updated!", "success");
       } else {
         data.createdAt = serverTimestamp();
-        await addDoc(collection(db, 'customers'), data);
-        showToast('Customer added!', 'success');
+        await addDoc(collection(db, "customers"), data);
+        showToast("Customer added!", "success");
       }
       window.closeModal();
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message, "error");
     } finally {
       toggleLoader(false);
     }
@@ -1601,12 +1844,14 @@ const openCustomerFormModal = (customer = null) => {
 };
 
 // wire the add customer button to the form modal
-if (document.getElementById('add-customer-btn')) {
-  document.getElementById('add-customer-btn').addEventListener('click', () => openCustomerFormModal());
+if (document.getElementById("add-customer-btn")) {
+  document
+    .getElementById("add-customer-btn")
+    .addEventListener("click", () => openCustomerFormModal());
 }
 
 window.editCustomerModal = (id) => {
-  const c = state.customers.find(x => x.id === id);
+  const c = state.customers.find((x) => x.id === id);
   if (c) openCustomerFormModal(c);
 };
 
@@ -1618,10 +1863,12 @@ window.deleteCustomer = async (id) => {
 };
 
 window.receiveCustomerPayment = async (id) => {
-  const cust = state.customers.find(c => c.id === id);
+  const cust = state.customers.find((c) => c.id === id);
   if (!cust) return;
 
-  const amountStr = prompt(`Current Udhaar for ${cust.name}: ${formatCurrency(cust.balance)}\nEnter received payment amount (Rs.):`);
+  const amountStr = prompt(
+    `Current Udhaar for ${cust.name}: ${formatCurrency(cust.balance)}\nEnter received payment amount (Rs.):`,
+  );
   const amount = parseFloat(amountStr);
   if (isNaN(amount) || amount <= 0) return;
 
@@ -1645,18 +1892,24 @@ const renderSuppliersTable = () => {
 
   // Build a quick lookup of purchases grouped by supplierName
   const purchasesBySupplier = {};
-  (state.purchases || []).forEach(p => {
-    const name = (p.supplierName || '').toString();
+  (state.purchases || []).forEach((p) => {
+    const name = (p.supplierName || "").toString();
     if (!purchasesBySupplier[name]) purchasesBySupplier[name] = [];
     purchasesBySupplier[name].push(p);
   });
 
-  state.suppliers.forEach(s => {
-    const company = s.companyName || '';
+  state.suppliers.forEach((s) => {
+    const company = s.companyName || "";
     // Sum paidAmount and balanceDue for this supplier from purchases
     const purList = purchasesBySupplier[company] || [];
-    const supplierPaid = purList.reduce((acc, curr) => acc + (curr.paidAmount || 0), 0);
-    const supplierPayable = purList.reduce((acc, curr) => acc + (curr.balanceDue || 0), 0) || (s.balance || 0);
+    const supplierPaid = purList.reduce(
+      (acc, curr) => acc + (curr.paidAmount || 0),
+      0,
+    );
+    const supplierPayable =
+      purList.reduce((acc, curr) => acc + (curr.balanceDue || 0), 0) ||
+      s.balance ||
+      0;
 
     overallPaid += supplierPaid;
     overallPayable += supplierPayable;
@@ -1664,8 +1917,8 @@ const renderSuppliersTable = () => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><strong>${s.companyName}</strong></td>
-      <td>${s.contactName || 'N/A'}</td>
-      <td>${s.phone || 'N/A'}</td>
+      <td>${s.contactName || "N/A"}</td>
+      <td>${s.phone || "N/A"}</td>
       <td>${formatCurrency(supplierPaid)}</td>
       <td><strong class="text-red">${formatCurrency(supplierPayable)}</strong></td>
       <td>
@@ -1677,8 +1930,8 @@ const renderSuppliersTable = () => {
   });
 
   // Update overall totals in the UI if present
-  const totalPaidEl = document.getElementById('suppliers-total-paid');
-  const totalPayableEl = document.getElementById('suppliers-total-payable');
+  const totalPaidEl = document.getElementById("suppliers-total-paid");
+  const totalPayableEl = document.getElementById("suppliers-total-payable");
   if (totalPaidEl) totalPaidEl.innerText = formatCurrency(overallPaid);
   if (totalPayableEl) totalPayableEl.innerText = formatCurrency(overallPayable);
 };
@@ -1694,13 +1947,19 @@ const openSupplierModal = (supplier = null) => {
       companyName,
       phone: phone || "",
       balance: 0,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
     }).then(() => showToast("Supplier saved!", "success"));
   } else {
-    const companyName = prompt("Supplier / Company Name:", supplier.companyName) || supplier.companyName;
-    const phone = prompt("Phone Number:", supplier.phone || "") || supplier.phone || "";
-    updateDoc(doc(db, "suppliers", supplier.id), { companyName, phone, updatedAt: serverTimestamp() })
-      .then(() => showToast("Supplier updated!", "success"));
+    const companyName =
+      prompt("Supplier / Company Name:", supplier.companyName) ||
+      supplier.companyName;
+    const phone =
+      prompt("Phone Number:", supplier.phone || "") || supplier.phone || "";
+    updateDoc(doc(db, "suppliers", supplier.id), {
+      companyName,
+      phone,
+      updatedAt: serverTimestamp(),
+    }).then(() => showToast("Supplier updated!", "success"));
   }
 };
 
@@ -1712,26 +1971,26 @@ const openSupplierFormModal = async (supplier = null) => {
 
   modalContent.innerHTML = `
     <div class="modal-header">
-      <h3>${supplier ? 'Edit Supplier' : 'Add Supplier'}</h3>
+      <h3>${supplier ? "Edit Supplier" : "Add Supplier"}</h3>
       <button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <form id="supplier-form">
       <div class="modal-body">
         <div class="form-group">
           <label>Company Name *</label>
-          <input type="text" id="sup-company" value="${supplier ? supplier.companyName : ''}" required>
+          <input type="text" id="sup-company" value="${supplier ? supplier.companyName : ""}" required>
         </div>
         <div class="form-group">
           <label>Contact Person</label>
-          <input type="text" id="sup-contact" value="${supplier ? supplier.contactName || '' : ''}">
+          <input type="text" id="sup-contact" value="${supplier ? supplier.contactName || "" : ""}">
         </div>
         <div class="form-group">
           <label>Phone</label>
-          <input type="text" id="sup-phone" value="${supplier ? supplier.phone || '' : ''}">
+          <input type="text" id="sup-phone" value="${supplier ? supplier.phone || "" : ""}">
         </div>
         <div class="form-group">
           <label>Initial Payable Balance (Optional)</label>
-          <input type="number" id="sup-balance" value="${supplier ? (supplier.balance||0) : 0}" step="0.01">
+          <input type="number" id="sup-balance" value="${supplier ? supplier.balance || 0 : 0}" step="0.01">
         </div>
       </div>
       <div class="modal-footer">
@@ -1741,31 +2000,34 @@ const openSupplierFormModal = async (supplier = null) => {
     </form>
   `;
 
-  modalContainer.classList.remove('hidden');
+  modalContainer.classList.remove("hidden");
 
-  document.getElementById('supplier-form').onsubmit = async (e) => {
+  document.getElementById("supplier-form").onsubmit = async (e) => {
     e.preventDefault();
-    toggleLoader(true, supplier ? 'Updating supplier...' : 'Saving supplier...');
+    toggleLoader(
+      true,
+      supplier ? "Updating supplier..." : "Saving supplier...",
+    );
     try {
       const data = {
         businessId,
-        companyName: document.getElementById('sup-company').value,
-        contactName: document.getElementById('sup-contact').value || '',
-        phone: document.getElementById('sup-phone').value || '',
-        balance: parseFloat(document.getElementById('sup-balance').value) || 0,
-        updatedAt: serverTimestamp()
+        companyName: document.getElementById("sup-company").value,
+        contactName: document.getElementById("sup-contact").value || "",
+        phone: document.getElementById("sup-phone").value || "",
+        balance: parseFloat(document.getElementById("sup-balance").value) || 0,
+        updatedAt: serverTimestamp(),
       };
       if (supplier) {
-        await updateDoc(doc(db, 'suppliers', supplier.id), data);
-        showToast('Supplier updated!', 'success');
+        await updateDoc(doc(db, "suppliers", supplier.id), data);
+        showToast("Supplier updated!", "success");
       } else {
         data.createdAt = serverTimestamp();
-        await addDoc(collection(db, 'suppliers'), data);
-        showToast('Supplier added!', 'success');
+        await addDoc(collection(db, "suppliers"), data);
+        showToast("Supplier added!", "success");
       }
       window.closeModal();
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message, "error");
     } finally {
       toggleLoader(false);
     }
@@ -1773,7 +2035,7 @@ const openSupplierFormModal = async (supplier = null) => {
 };
 
 window.editSupplierModal = (id) => {
-  const s = state.suppliers.find(x => x.id === id);
+  const s = state.suppliers.find((x) => x.id === id);
   if (s) openSupplierFormModal(s);
 };
 
@@ -1786,20 +2048,20 @@ window.deleteSupplier = async (id) => {
 
 // Expense form modal
 const openExpenseFormModal = (expense = null) => {
-  const modalContainer = document.getElementById('modal-container');
-  const modalContent = document.getElementById('modal-content');
+  const modalContainer = document.getElementById("modal-container");
+  const modalContent = document.getElementById("modal-content");
   if (!modalContainer || !modalContent) return;
 
   modalContent.innerHTML = `
     <div class="modal-header">
-      <h3>${expense ? 'Edit Expense' : 'Add Expense'}</h3>
+      <h3>${expense ? "Edit Expense" : "Add Expense"}</h3>
       <button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <form id="expense-form">
       <div class="modal-body">
         <div class="form-group">
           <label>Title *</label>
-          <input type="text" id="expense-title" value="${expense ? (expense.title || '') : ''}" required>
+          <input type="text" id="expense-title" value="${expense ? expense.title || "" : ""}" required>
         </div>
         <div class="form-group">
           <label>Category</label>
@@ -1813,7 +2075,7 @@ const openExpenseFormModal = (expense = null) => {
         </div>
         <div class="form-group">
           <label>Amount (Rs.) *</label>
-          <input type="number" id="expense-amount" value="${expense ? (expense.amount||0) : ''}" required step="0.01">
+          <input type="number" id="expense-amount" value="${expense ? expense.amount || 0 : ""}" required step="0.01">
         </div>
       </div>
       <div class="modal-footer">
@@ -1824,32 +2086,46 @@ const openExpenseFormModal = (expense = null) => {
   `;
 
   if (expense && expense.category) {
-    setTimeout(() => { const sel = document.getElementById('expense-category'); if (sel) sel.value = expense.category; }, 0);
+    setTimeout(() => {
+      const sel = document.getElementById("expense-category");
+      if (sel) sel.value = expense.category;
+    }, 0);
   }
 
-  modalContainer.classList.remove('hidden');
+  modalContainer.classList.remove("hidden");
 
-  document.getElementById('expense-form').onsubmit = async (e) => {
+  document.getElementById("expense-form").onsubmit = async (e) => {
     e.preventDefault();
-    toggleLoader(true, expense ? 'Updating expense...' : 'Saving expense...');
+    toggleLoader(true, expense ? "Updating expense..." : "Saving expense...");
     try {
-      const title = document.getElementById('expense-title').value.trim();
-      const category = document.getElementById('expense-category').value;
-      const amount = parseFloat(document.getElementById('expense-amount').value) || 0;
-      if (!title || isNaN(amount) || amount <= 0) { showToast('Please provide valid title and amount', 'error'); toggleLoader(false); return; }
+      const title = document.getElementById("expense-title").value.trim();
+      const category = document.getElementById("expense-category").value;
+      const amount =
+        parseFloat(document.getElementById("expense-amount").value) || 0;
+      if (!title || isNaN(amount) || amount <= 0) {
+        showToast("Please provide valid title and amount", "error");
+        toggleLoader(false);
+        return;
+      }
 
-      const data = { businessId, title, category, amount, updatedAt: serverTimestamp() };
+      const data = {
+        businessId,
+        title,
+        category,
+        amount,
+        updatedAt: serverTimestamp(),
+      };
       if (expense) {
-        await updateDoc(doc(db, 'expenses', expense.id), data);
-        showToast('Expense updated!', 'success');
+        await updateDoc(doc(db, "expenses", expense.id), data);
+        showToast("Expense updated!", "success");
       } else {
         data.createdAt = serverTimestamp();
-        await addDoc(collection(db, 'expenses'), data);
-        showToast('Expense recorded!', 'success');
+        await addDoc(collection(db, "expenses"), data);
+        showToast("Expense recorded!", "success");
       }
       window.closeModal();
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message, "error");
     } finally {
       toggleLoader(false);
     }
@@ -1859,7 +2135,6 @@ const openExpenseFormModal = (expense = null) => {
 // keep old alias for compatibility
 const openExpenseModal = (expense = null) => openExpenseFormModal(expense);
 
-
 const openPurchaseModal = (purchase = null) => {
   // keep for backward compatibility
   if (!purchase) {
@@ -1868,7 +2143,9 @@ const openPurchaseModal = (purchase = null) => {
       return;
     }
     const suppName = state.suppliers[0].companyName;
-    const amount = parseFloat(prompt(`Enter purchase invoice total for supplier [${suppName}]:`));
+    const amount = parseFloat(
+      prompt(`Enter purchase invoice total for supplier [${suppName}]:`),
+    );
     if (isNaN(amount) || amount <= 0) return;
 
     addDoc(collection(db, "purchases"), {
@@ -1878,29 +2155,39 @@ const openPurchaseModal = (purchase = null) => {
       totalAmount: amount,
       paidAmount: amount,
       balanceDue: 0,
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
     }).then(() => showToast("Purchase stock invoice created!", "success"));
   } else {
-    const paid = parseFloat(prompt("Update paid amount:", purchase.paidAmount || 0));
+    const paid = parseFloat(
+      prompt("Update paid amount:", purchase.paidAmount || 0),
+    );
     if (isNaN(paid)) return;
     const newBalance = Math.max(0, (purchase.totalAmount || 0) - paid);
-    updateDoc(doc(db, "purchases", purchase.id), { paidAmount: paid, balanceDue: newBalance, updatedAt: serverTimestamp() })
-      .then(() => showToast("Purchase updated!", "success"));
+    updateDoc(doc(db, "purchases", purchase.id), {
+      paidAmount: paid,
+      balanceDue: newBalance,
+      updatedAt: serverTimestamp(),
+    }).then(() => showToast("Purchase updated!", "success"));
   }
 };
 
 // New: Purchase Form Modal
 const openPurchaseFormModal = (purchase = null) => {
-  const modalContainer = document.getElementById('modal-container');
-  const modalContent = document.getElementById('modal-content');
+  const modalContainer = document.getElementById("modal-container");
+  const modalContent = document.getElementById("modal-content");
   if (!modalContainer || !modalContent) return;
 
   // Build supplier options
-  const supplierOptions = (state.suppliers || []).map(s => `<option value="${s.id}" ${purchase && purchase.supplierId === s.id ? 'selected' : ''}>${s.companyName}</option>`).join('');
+  const supplierOptions = (state.suppliers || [])
+    .map(
+      (s) =>
+        `<option value="${s.id}" ${purchase && purchase.supplierId === s.id ? "selected" : ""}>${s.companyName}</option>`,
+    )
+    .join("");
 
   modalContent.innerHTML = `
     <div class="modal-header">
-      <h3>${purchase ? 'Edit Purchase' : 'Record New Purchase'}</h3>
+      <h3>${purchase ? "Edit Purchase" : "Record New Purchase"}</h3>
       <button class="icon-btn" onclick="window.closeModal()"><i class="fa-solid fa-xmark"></i></button>
     </div>
     <form id="purchase-form">
@@ -1914,15 +2201,15 @@ const openPurchaseFormModal = (purchase = null) => {
         </div>
         <div class="form-group">
           <label>Invoice Number</label>
-          <input type="text" id="purchase-inv" value="${purchase ? purchase.invoiceNumber : 'PUR-' + Math.floor(1000 + Math.random() * 9000)}">
+          <input type="text" id="purchase-inv" value="${purchase ? purchase.invoiceNumber : "PUR-" + Math.floor(1000 + Math.random() * 9000)}">
         </div>
         <div class="form-group">
           <label>Total Amount (Rs.) *</label>
-          <input type="number" id="purchase-total" value="${purchase ? (purchase.totalAmount||0) : ''}" required step="0.01">
+          <input type="number" id="purchase-total" value="${purchase ? purchase.totalAmount || 0 : ""}" required step="0.01">
         </div>
         <div class="form-group">
           <label>Paid Amount (Rs.)</label>
-          <input type="number" id="purchase-paid" value="${purchase ? (purchase.paidAmount||0) : ''}" step="0.01">
+          <input type="number" id="purchase-paid" value="${purchase ? purchase.paidAmount || 0 : ""}" step="0.01">
         </div>
       </div>
       <div class="modal-footer">
@@ -1932,43 +2219,54 @@ const openPurchaseFormModal = (purchase = null) => {
     </form>
   `;
 
-  modalContainer.classList.remove('hidden');
+  modalContainer.classList.remove("hidden");
 
-  document.getElementById('purchase-form').onsubmit = async (e) => {
+  document.getElementById("purchase-form").onsubmit = async (e) => {
     e.preventDefault();
-    toggleLoader(true, purchase ? 'Updating purchase...' : 'Saving purchase...');
+    toggleLoader(
+      true,
+      purchase ? "Updating purchase..." : "Saving purchase...",
+    );
     try {
-      const supplierId = document.getElementById('purchase-supplier').value;
-      if (!supplierId) { showToast('Please select supplier', 'error'); toggleLoader(false); return; }
-      const supplier = state.suppliers.find(s => s.id === supplierId) || {};
-      const invoiceNumber = document.getElementById('purchase-inv').value || 'PUR-' + Math.floor(1000 + Math.random() * 9000);
-      const totalAmount = parseFloat(document.getElementById('purchase-total').value) || 0;
-      const paidAmount = parseFloat(document.getElementById('purchase-paid').value) || 0;
+      const supplierId = document.getElementById("purchase-supplier").value;
+      if (!supplierId) {
+        showToast("Please select supplier", "error");
+        toggleLoader(false);
+        return;
+      }
+      const supplier = state.suppliers.find((s) => s.id === supplierId) || {};
+      const invoiceNumber =
+        document.getElementById("purchase-inv").value ||
+        "PUR-" + Math.floor(1000 + Math.random() * 9000);
+      const totalAmount =
+        parseFloat(document.getElementById("purchase-total").value) || 0;
+      const paidAmount =
+        parseFloat(document.getElementById("purchase-paid").value) || 0;
       const balanceDue = Math.max(0, totalAmount - paidAmount);
 
       const data = {
         businessId,
         invoiceNumber,
         supplierId,
-        supplierName: supplier.companyName || '',
+        supplierName: supplier.companyName || "",
         totalAmount,
         paidAmount,
         balanceDue,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
       };
 
       if (purchase) {
-        await updateDoc(doc(db, 'purchases', purchase.id), data);
-        showToast('Purchase updated!', 'success');
+        await updateDoc(doc(db, "purchases", purchase.id), data);
+        showToast("Purchase updated!", "success");
       } else {
         data.createdAt = serverTimestamp();
-        await addDoc(collection(db, 'purchases'), data);
-        showToast('Purchase created!', 'success');
+        await addDoc(collection(db, "purchases"), data);
+        showToast("Purchase created!", "success");
       }
 
       window.closeModal();
     } catch (err) {
-      showToast(err.message, 'error');
+      showToast(err.message, "error");
     } finally {
       toggleLoader(false);
     }
@@ -1976,7 +2274,7 @@ const openPurchaseFormModal = (purchase = null) => {
 };
 
 window.editPurchaseModal = (id) => {
-  const p = state.purchases.find(x => x.id === id);
+  const p = state.purchases.find((x) => x.id === id);
   if (p) openPurchaseFormModal(p);
 };
 
@@ -1996,33 +2294,97 @@ const generateReport = () => {
 
   let filteredSales = state.sales;
   if (start && end) {
-    filteredSales = state.sales.filter(s => {
-      const d = s.createdAt?.toDate ? s.createdAt.toDate().toISOString().split("T")[0] : "";
+    filteredSales = state.sales.filter((s) => {
+      const d = s.createdAt?.toDate
+        ? s.createdAt.toDate().toISOString().split("T")[0]
+        : "";
       return d >= start && d <= end;
     });
   }
 
-  const totalSales = filteredSales.reduce((acc, curr) => acc + (curr.grandTotal || 0), 0);
-  const totalProfit = filteredSales.reduce((acc, curr) => acc + (curr.totalProfit || 0), 0);
-  const totalExpenses = state.expenses.reduce((acc, curr) => acc + (curr.amount || 0), 0);
+  const totalSales = filteredSales.reduce(
+    (acc, curr) => acc + (curr.grandTotal || 0),
+    0,
+  );
+  const totalProfit = filteredSales.reduce(
+    (acc, curr) => acc + (curr.totalProfit || 0),
+    0,
+  );
+  const totalExpenses = state.expenses.reduce(
+    (acc, curr) => acc + (curr.amount || 0),
+    0,
+  );
 
-  document.getElementById("rep-total-sales").innerText = formatCurrency(totalSales);
-  document.getElementById("rep-total-cogs").innerText = formatCurrency(totalSales - totalProfit);
-  document.getElementById("rep-total-expenses").innerText = formatCurrency(totalExpenses);
-  document.getElementById("rep-net-profit").innerText = formatCurrency(totalProfit - totalExpenses);
+  document.getElementById("rep-total-sales").innerText =
+    formatCurrency(totalSales);
+  document.getElementById("rep-total-cogs").innerText = formatCurrency(
+    totalSales - totalProfit,
+  );
+  document.getElementById("rep-total-expenses").innerText =
+    formatCurrency(totalExpenses);
+  document.getElementById("rep-net-profit").innerText = formatCurrency(
+    totalProfit - totalExpenses,
+  );
 };
 
 const seedDemoData = async () => {
-  if (!confirm("This will add demo items (Sugar, Atta, Rice, Milk, Oil, Tea) to your store inventory. Proceed?")) return;
+  if (
+    !confirm(
+      "This will add demo items (Sugar, Atta, Rice, Milk, Oil, Tea) to your store inventory. Proceed?",
+    )
+  )
+    return;
   toggleLoader(true, "Seeding Pakistani Retail Items...");
 
   const items = [
-    { name: "Sugar (Cheeni)", category: "Grocery", unit: "KG", currentStock: 50, purchasePrice: 130, sellingPrice: 150 },
-    { name: "Wheat Flour (Chakki Atta)", category: "Grocery", unit: "KG", currentStock: 100, purchasePrice: 110, sellingPrice: 125 },
-    { name: "Basmati Rice (Chawal)", category: "Grocery", unit: "KG", currentStock: 40, purchasePrice: 280, sellingPrice: 320 },
-    { name: "Olper's Milk 1L", category: "Dairy", unit: "Pack", currentStock: 24, purchasePrice: 260, sellingPrice: 290 },
-    { name: "Dalda Cooking Oil 1L", category: "Grocery", unit: "Pack", currentStock: 15, purchasePrice: 500, sellingPrice: 540 },
-    { name: "Tapal Danedar Tea 950g", category: "Snacks", unit: "Pack", currentStock: 10, purchasePrice: 1400, sellingPrice: 1550 }
+    {
+      name: "Sugar (Cheeni)",
+      category: "Grocery",
+      unit: "KG",
+      currentStock: 50,
+      purchasePrice: 130,
+      sellingPrice: 150,
+    },
+    {
+      name: "Wheat Flour (Chakki Atta)",
+      category: "Grocery",
+      unit: "KG",
+      currentStock: 100,
+      purchasePrice: 110,
+      sellingPrice: 125,
+    },
+    {
+      name: "Basmati Rice (Chawal)",
+      category: "Grocery",
+      unit: "KG",
+      currentStock: 40,
+      purchasePrice: 280,
+      sellingPrice: 320,
+    },
+    {
+      name: "Olper's Milk 1L",
+      category: "Dairy",
+      unit: "Pack",
+      currentStock: 24,
+      purchasePrice: 260,
+      sellingPrice: 290,
+    },
+    {
+      name: "Dalda Cooking Oil 1L",
+      category: "Grocery",
+      unit: "Pack",
+      currentStock: 15,
+      purchasePrice: 500,
+      sellingPrice: 540,
+    },
+    {
+      name: "Tapal Danedar Tea 950g",
+      category: "Snacks",
+      unit: "Pack",
+      currentStock: 10,
+      purchasePrice: 1400,
+      sellingPrice: 1550,
+    },
   ];
 
   try {
@@ -2030,9 +2392,11 @@ const seedDemoData = async () => {
       await addDoc(collection(db, "products"), {
         ...item,
         businessId,
-        barcode: String(Math.floor(100000000000 + Math.random() * 900000000000)),
+        barcode: String(
+          Math.floor(100000000000 + Math.random() * 900000000000),
+        ),
         minStockAlert: 5,
-        createdAt: serverTimestamp()
+        createdAt: serverTimestamp(),
       });
     }
     showToast("Pakistani demo inventory loaded!", "success");
@@ -2045,16 +2409,18 @@ const seedDemoData = async () => {
 
 const exportProductsCSV = () => {
   let csv = "Barcode,Product Name,Category,Unit,Cost,Price,Stock\n";
-  state.products.forEach(p => {
-    csv += `"${p.barcode||''}","${p.name}","${p.category}","${p.unit}",${p.purchasePrice},${p.sellingPrice},${p.currentStock}\n`;
+  state.products.forEach((p) => {
+    csv += `"${p.barcode || ""}","${p.name}","${p.category}","${p.unit}",${p.purchasePrice},${p.sellingPrice},${p.currentStock}\n`;
   });
   downloadCSV(csv, "products_export.csv");
 };
 
 const exportSalesCSV = () => {
   let csv = "Invoice Number,Customer,Grand Total,Payment Method,Date\n";
-  state.sales.forEach(s => {
-    const d = s.createdAt?.toDate ? s.createdAt.toDate().toLocaleDateString() : "";
+  state.sales.forEach((s) => {
+    const d = s.createdAt?.toDate
+      ? s.createdAt.toDate().toLocaleDateString()
+      : "";
     csv += `"${s.invoiceNumber}","${s.customerName}",${s.grandTotal},"${s.paymentMethod}","${d}"\n`;
   });
   downloadCSV(csv, "sales_export.csv");
