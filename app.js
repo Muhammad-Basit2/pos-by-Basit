@@ -149,6 +149,36 @@ const normalizeToStandardUnit = (qty, unit) => {
   return parsedQty;
 };
 
+const readLogoFile = (file) =>
+  new Promise((resolve, reject) => {
+    if (!file) return resolve("");
+    if (file.size > 5 * 1024 * 1024) {
+      reject(new Error("Logo must be smaller than 5 MB."));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      const image = new Image();
+      image.onload = () => {
+        const maxWidth = 600;
+        const maxHeight = 240;
+        const scale = Math.min(1, maxWidth / image.width, maxHeight / image.height);
+        const canvas = document.createElement("canvas");
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#ffffff";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL("image/jpeg", 0.82));
+      };
+      image.onerror = () => reject(new Error("Unable to process the logo file."));
+      image.src = reader.result;
+    };
+    reader.onerror = () => reject(new Error("Unable to read the logo file."));
+    reader.readAsDataURL(file);
+  });
+
 const populatePrintWindowContent = (
   printWindow,
   saleData,
@@ -156,6 +186,10 @@ const populatePrintWindowContent = (
   autoPrint = true,
 ) => {
   if (!printWindow) return;
+
+  const logoContent = currentBusiness?.logoDataUrl
+    ? `<img src="${currentBusiness.logoDataUrl}" alt="Shop logo">`
+    : `<h1>${currentBusiness?.shopName || "PAKPOS"}</h1>`;
 
   const subtotalForCalc = saleData.subtotal || 0;
 
@@ -193,64 +227,61 @@ const populatePrintWindowContent = (
           <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
           <style>
             ${pageCss}
-            body { font-family: 'Inter', 'Noto Nastaliq Urdu', 'Georgia', serif; color:#222; margin:0; padding:18px; display:flex; justify-content:center; }
+            body { font-family: 'Inter', 'Noto Nastaliq Urdu', sans-serif; color:#17212b; margin:0; padding:18px; display:flex; justify-content:center; background:#f3f6f8; }
             .urdu-text { font-family: 'Noto Nastaliq Urdu', serif; direction: rtl; line-height: 2; }
-            .invoice-wrap { width:100%; max-width:${containerMaxWidth}; border: 1px solid #e6d9c6; padding:22px; background: linear-gradient(180deg,#fff 0%, #fcfbf8 100%); box-sizing:border-box; }
-            .inv-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
-            .logo { text-align:center; flex:1; }
-            .logo h1 { margin:0; font-size:${shopFontSize}; letter-spacing:2px; color:#b8842a; }
-            .inv-title { flex:1; }
-            .inv-title h2 { margin:0; font-size:${titleSize}; font-weight:800; letter-spacing:2px; color:#333; }
-            .inv-meta { text-align:right; flex:1; font-size:13px; color:#444; }
-
-            .boxes { display:flex; gap:12px; margin-top:14px; }
-            .box { flex:1; padding:12px; border:1px dashed #d2c3a8; background: rgba(0,0,0,0.01); }
-            .box h4{ margin:0 0 8px 0; font-size:13px; color:#b8842a; }
-            .box p{ margin:0; font-size:13px; }
-
-            table.inv-items { width:100%; border-collapse:collapse; margin-top:16px; }
-            table.inv-items thead th { border-bottom:2px solid #d2c3a8; padding:10px; text-align:left; font-size:13px; }
-            table.inv-items tbody td { border-bottom:1px solid #eee; padding:8px 10px; font-size:13px; }
-
-            .totals { width:100%; display:flex; justify-content:flex-end; margin-top:16px; }
-            .totals .right { width:360px; }
-            .totals .right .row { display:flex; justify-content:space-between; padding:8px 10px; font-size:14px; }
-            .totals .right .grand { font-weight:800; font-size:18px; border-top:2px solid #d2c3a8; padding-top:12px; }
-
-            .payment { display:flex; align-items:center; gap:16px; margin-top:20px; }
-            .signature { flex:1; }
-            .signature .sig-line { border-top:1px dashed #bdb2a0; width:260px; margin-top:28px; }
-            .payment .methods { font-size:13px; color:#444; }
-
-            .inv-footer { text-align:center; margin-top:22px; font-size:12px; color:#6b6b6b; border-top:1px solid #efe7da; padding-top:10px; }
-
-            .inv-number { font-weight:700; color:#222; }
+            .invoice-wrap { width:100%; max-width:${containerMaxWidth}; border-top:5px solid #0f766e; padding:28px; background:#fff; box-sizing:border-box; box-shadow:0 8px 24px rgba(15,23,42,.08); }
+            .inv-header { display:flex; align-items:flex-start; justify-content:space-between; gap:20px; padding-bottom:22px; border-bottom:1px solid #dbe4e8; }
+            .inv-title { flex:1; order:1; text-align:left; }
+            .inv-title h1 { margin:0 0 8px; font-size:${shopFontSize}; letter-spacing:.2px; color:#0f766e; }
+            .inv-title img { display:block; width:auto; max-width:150px; max-height:58px; margin:0 0 8px; object-fit:contain; object-position:left center; }
+            .inv-title h4 { margin:0 0 8px; font-size:${titleSize}; line-height:1; font-weight:800; letter-spacing:1px; color:#17212b; }
+            .inv-title span { color:#64748b; font-size:12px; }
+            .inv-meta { order:3; flex:1; text-align:right; font-size:12px; line-height:1.8; color:#64748b; }
+            .inv-number { font-weight:700; color:#17212b; }
+            .boxes { display:flex; gap:12px; margin-top:20px; }
+            .box { flex:1; padding:14px; border:1px solid #dbe4e8; border-radius:6px; background:#f8fafb; }
+            .box h4{ margin:0 0 7px; font-size:10px; letter-spacing:1px; color:#0f766e; }
+            .box p{ margin:2px 0; font-size:12px; }
+            table.inv-items { width:100%; border-collapse:collapse; margin-top:22px; }
+            table.inv-items thead th { background:#0f766e; color:#fff; padding:10px; text-align:left; font-size:11px; }
+            table.inv-items thead th:first-child { border-radius:4px 0 0 4px; }
+            table.inv-items thead th:last-child { border-radius:0 4px 4px 0; }
+            table.inv-items tbody td { border-bottom:1px solid #e8eef0; padding:10px; font-size:12px; }
+            .totals { width:100%; display:flex; justify-content:flex-end; margin-top:20px; }
+            .totals .right { width:300px; }
+            .totals .right .row { display:flex; justify-content:space-between; padding:5px 0; font-size:12px; }
+            .totals .right .grand { margin-top:6px; padding:12px 10px; border-radius:5px; background:#e6f4f2; color:#0f766e; font-weight:800; font-size:17px; }
+            .payment { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin-top:24px; padding-top:16px; border-top:1px solid #dbe4e8; font-size:12px; }
+            .signature { flex:1; color:#64748b; }
+            .signature strong { color:#17212b; }
+            .signature .sig-line { border-top:1px dashed #aab8bf; width:180px; margin-top:24px; }
+            .payment .methods { text-align:right; line-height:1.8; }
+            .inv-footer { text-align:center; margin-top:24px; font-size:11px; color:#64748b; border-top:1px solid #dbe4e8; padding-top:12px; }
+            @media print { body { background:#fff; padding:0; } .invoice-wrap { box-shadow:none; } }
           </style>
         </head>
         <body>
           <div class="invoice-wrap">
             <div class="inv-header">
               <div class="inv-title">
+                ${logoContent}
                 <h2>INVOICE</h2>
-              </div>
-              <div class="logo">
-                <h1>${currentBusiness?.shopName || "PAKPOS"}</h1>
-                <div style="font-size:12px; color:#7a5f3a;">${currentBusiness?.ownerName || ""}</div>
+                <span>Thank you for your business</span>
               </div>
               <div class="inv-meta">
-                <div>Invoice Number: <span class="inv-number">${saleData.invoiceNumber}</span></div>
-                <div>Date: <strong>${new Date().toLocaleDateString()}</strong></div>
+                <div>Invoice # <span class="inv-number">${saleData.invoiceNumber}</span></div>
+                <div>${new Date().toLocaleDateString()}</div>
               </div>
             </div>
 
             <div class="boxes">
               <div class="box">
-                <h4>BILL TO</h4>
+                <h4>BILLED TO</h4>
                 <p><strong>${saleData.customerName}</strong></p>
                 <p>Phone: ${saleData.customerPhone ? saleData.customerPhone : "N/A"}</p>
               </div>
               <div class="box">
-                <h4>DATA FOR THE TRANSFER</h4>
+                <h4>FROM</h4>
                 <p>${currentBusiness?.shopName || ""}</p>
                 <p>Phone: ${currentBusiness?.phone || ""}</p>
                 <p>Usage: Sale ${saleData.invoiceNumber}</p>
@@ -339,26 +370,33 @@ const populatePrintWindowContent = (
     <html>
       <head>
         <title>Receipt - ${saleData.invoiceNumber}</title>
+        <meta charset="utf-8">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
         <style>
           ${pageCss}
-          body { ${bodyStyle} font-family: 'Inter', 'Noto Nastaliq Urdu', monospace; padding: 6px; color: #000; }
+          body { ${bodyStyle} font-family: 'Inter', 'Noto Nastaliq Urdu', sans-serif; padding: 6px; color: #17212b; }
           .urdu-text { font-family: 'Noto Nastaliq Urdu', serif; direction: rtl; line-height: 2; }
           h2, p { text-align: center; margin: 2px 0; }
-          table { width: 100%; border-collapse: collapse; margin-top: 8px; }
-          td { padding: 4px 0; vertical-align: top; }
-          .border-top { border-top: 1px dashed #000; }
-          .total-row { font-weight: bold; }
-          .small { font-size: 10px; }
+          h2 { color:#0f766e; font-size:18px; }
+          .receipt-logo { display:block; width:auto; max-width:54mm; max-height:18mm; margin:0 auto 3px; object-fit:contain; }
+          table { width:100%; border-collapse:collapse; margin-top:10px; }
+          td { padding:5px 0; vertical-align:top; border-bottom:1px solid #dbe4e8; }
+          .border-top { border-top:1px solid #0f766e; }
+          .total-row { font-weight:bold; font-size:12px; color:#0f766e; }
+          .small { font-size:9px; color:#64748b; }
+          .receipt-rule { color:#94a3b8; }
         </style>
       </head>
       <body>
-        <h2>${currentBusiness?.shopName || "PakPOS Store"}</h2>
+        ${currentBusiness?.logoDataUrl ? `<img class="receipt-logo" src="${currentBusiness.logoDataUrl}" alt="Shop logo">` : `<h2>${currentBusiness?.shopName || "PakPOS Store"}</h2>`}
         <p class="small">${currentBusiness?.address || ""}</p>
         <p class="small">Phone: ${currentBusiness?.phone || "N/A"}</p>
-        <p>--------------------------------</p>
+        <p class="receipt-rule">--------------------------------</p>
         <p>Invoice: ${saleData.invoiceNumber}</p>
         <p>Customer: ${saleData.customerName}</p>
-        <p>--------------------------------</p>
+        <p class="receipt-rule">--------------------------------</p>
         <table>
           ${itemsHtml}
           <tr class="border-top">
@@ -475,11 +513,16 @@ const loadUserProfileAndBusiness = async () => {
     const setShopPhone = document.getElementById("set-shop-phone");
     const setShopAddress = document.getElementById("set-shop-address");
     const setShopTax = document.getElementById("set-shop-tax");
+    const logoPreview = document.getElementById("shop-logo-preview");
 
     if (setShopName) setShopName.value = currentBusiness.shopName || "";
     if (setShopPhone) setShopPhone.value = currentBusiness.phone || "";
     if (setShopAddress) setShopAddress.value = currentBusiness.address || "";
     if (setShopTax) setShopTax.value = currentBusiness.tax || 0;
+    if (logoPreview && currentBusiness.logoDataUrl) {
+      logoPreview.src = currentBusiness.logoDataUrl;
+      logoPreview.classList.remove("hidden");
+    }
   } catch (err) {
     if (err.code === "permission-denied") {
       showToast(
@@ -693,13 +736,23 @@ const initAppListeners = () => {
         const address = document.getElementById("set-shop-address").value;
         const tax =
           parseFloat(document.getElementById("set-shop-tax").value) || 0;
+        const logoFile = document.getElementById("set-shop-logo")?.files?.[0];
+        const removeLogo = document.getElementById("set-remove-logo")?.checked;
+        const logoDataUrl = removeLogo
+          ? ""
+          : logoFile
+            ? await readLogoFile(logoFile)
+            : currentBusiness?.logoDataUrl || "";
 
-        await updateDoc(doc(db, "businesses", businessId), {
+        const businessUpdate = {
           shopName,
           phone,
           address,
           tax,
-        });
+          logoDataUrl,
+        };
+        await updateDoc(doc(db, "businesses", businessId), businessUpdate);
+        currentBusiness = { ...currentBusiness, ...businessUpdate };
         showToast("Settings updated successfully!", "success");
         loadUserProfileAndBusiness();
       } catch (err) {
@@ -708,6 +761,18 @@ const initAppListeners = () => {
         toggleLoader(false);
       }
     });
+
+  document.getElementById("set-shop-logo")?.addEventListener("change", (event) => {
+    const file = event.target.files?.[0];
+    const preview = document.getElementById("shop-logo-preview");
+    if (!file || !preview) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      preview.src = reader.result;
+      preview.classList.remove("hidden");
+    };
+    reader.readAsDataURL(file);
+  });
 
   document
     .getElementById("load-demo-data-btn")
