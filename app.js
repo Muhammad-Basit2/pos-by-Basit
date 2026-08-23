@@ -1,12 +1,13 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import {
-  getAuth,
+  initializeAuth,
   signInWithEmailAndPassword,
   createUserWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
   setPersistence,
-  inMemoryPersistence,
+  browserLocalPersistence,
+  browserSessionPersistence,
 } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 import {
   getFirestore,
@@ -38,14 +39,10 @@ const firebaseConfig = {
 };
 
 const app = initializeApp(firebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
-
-setPersistence(auth, inMemoryPersistence).catch((error) => {
-  showToast("Unable to set sign-in session: " + error.message, "error");
+const auth = initializeAuth(app, {
+  persistence: browserLocalPersistence,
 });
-
-signOut(auth).catch(() => {});
+const db = getFirestore(app);
 
 // ==========================================================================
 // 2. GLOBAL STATE MANAGEMENT
@@ -528,6 +525,8 @@ const navigateTo = (pageId) => {
     title.innerText = titles[pageId] || "Dashboard";
   }
 
+  if (pageId === "dashboard") refreshDashboard();
+
   document.getElementById("sidebar")?.classList.remove("open");
   document.getElementById("sidebar-overlay")?.classList.remove("open");
 };
@@ -822,6 +821,11 @@ document.getElementById("login-form")?.addEventListener("submit", async (e) => {
   try {
     const email = document.getElementById("login-email").value;
     const pass = document.getElementById("login-password").value;
+    const rememberLogin = document.getElementById("remember-login")?.checked ?? true;
+    await setPersistence(
+      auth,
+      rememberLogin ? browserLocalPersistence : browserSessionPersistence,
+    );
     await signInWithEmailAndPassword(auth, email, pass);
   } catch (err) {
     showToast(err.message, "error");
@@ -915,7 +919,7 @@ const setupRealtimeListeners = () => {
       populateCategoryDropdowns();
       renderCategoryChips();
       renderDeleteRecords();
-      updateDashboardMetrics();
+      refreshDashboard();
     },
     handleErr,
   );
@@ -934,6 +938,7 @@ const setupRealtimeListeners = () => {
       renderCustomersTable();
       renderPosCustomerDropdown();
       renderDeleteRecords();
+      refreshDashboard();
     },
     handleErr,
   );
@@ -966,6 +971,7 @@ const setupRealtimeListeners = () => {
       }));
       renderSuppliersTable();
       renderDeleteRecords();
+      refreshDashboard();
     },
     handleErr,
   );
@@ -980,8 +986,7 @@ const setupRealtimeListeners = () => {
       state.sales = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       renderSalesHistoryTable();
       renderDeleteRecords();
-      updateDashboardMetrics();
-      renderCharts();
+      refreshDashboard();
     },
     handleErr,
   );
@@ -999,7 +1004,7 @@ const setupRealtimeListeners = () => {
       }));
       renderPurchasesTable();
       renderDeleteRecords();
-      updateDashboardMetrics();
+      refreshDashboard();
     },
     handleErr,
   );
@@ -1017,6 +1022,7 @@ const setupRealtimeListeners = () => {
       }));
       renderExpensesTable();
       renderDeleteRecords();
+      refreshDashboard();
     },
     handleErr,
   );
@@ -1216,6 +1222,11 @@ const updateDashboardMetrics = () => {
   setElem("dash-stock-value", formatCurrency(totalStockVal));
   setElem("dash-total-receivables", formatCurrency(totalReceivables));
 };
+
+function refreshDashboard() {
+  updateDashboardMetrics();
+  renderCharts();
+}
 
 const renderCharts = () => {
   if (typeof Chart === "undefined") return;
