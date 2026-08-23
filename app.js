@@ -550,6 +550,17 @@ const initAppListeners = () => {
   if (catFilter) catFilter.addEventListener("change", renderProductsTable);
   if (prodSearch) prodSearch.addEventListener("input", renderProductsTable);
 
+  const salesSearch = document.getElementById("sales-search-input");
+  const salesDateFilter = document.getElementById("sales-date-filter");
+  if (salesSearch) salesSearch.addEventListener("input", renderSalesHistoryTable);
+  if (salesDateFilter) salesDateFilter.addEventListener("change", renderSalesHistoryTable);
+
+  const customerSearch = document.getElementById("customer-search-input");
+  if (customerSearch) customerSearch.addEventListener("input", renderCustomersTable);
+
+  const supplierSearch = document.getElementById("supplier-search-input");
+  if (supplierSearch) supplierSearch.addEventListener("input", renderSuppliersTable);
+
   const posSearch = document.getElementById("pos-search");
   const posCatSelect = document.getElementById("pos-category-filter");
   if (posSearch) {
@@ -1003,7 +1014,19 @@ const renderSalesHistoryTable = () => {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  state.sales.forEach((s) => {
+  const search =
+    document.getElementById("sales-search-input")?.value.toLowerCase().trim() || "";
+  const dateFilter = document.getElementById("sales-date-filter")?.value || "";
+
+  state.sales.filter((s) => {
+    const date = s.createdAt?.toDate ? s.createdAt.toDate() : null;
+    const dateStr = date ? date.toLocaleString() : "";
+    const matchesSearch = [s.invoiceNumber, s.customerName, s.paymentMethod]
+      .filter(Boolean)
+      .some((value) => value.toString().toLowerCase().includes(search));
+    const matchesDate = !dateFilter || (date && date.toISOString().slice(0, 10) === dateFilter);
+    return matchesSearch && matchesDate;
+  }).forEach((s) => {
     const tr = document.createElement("tr");
     const dateStr = s.createdAt?.toDate
       ? s.createdAt.toDate().toLocaleString()
@@ -1734,7 +1757,14 @@ const renderCustomersTable = () => {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  state.customers.forEach((c) => {
+  const search =
+    document.getElementById("customer-search-input")?.value.toLowerCase().trim() || "";
+
+  state.customers.filter((c) =>
+    [c.name, c.phone, c.cnic]
+      .filter(Boolean)
+      .some((value) => value.toString().toLowerCase().includes(search)),
+  ).forEach((c) => {
     const tr = document.createElement("tr");
     tr.innerHTML = `
       <td><strong>${c.name}</strong></td>
@@ -2079,6 +2109,9 @@ const renderSuppliersTable = () => {
   if (!tbody) return;
   tbody.innerHTML = "";
 
+  const search =
+    document.getElementById("supplier-search-input")?.value.toLowerCase().trim() || "";
+
   // Compute overall totals from purchases
   let overallPaid = 0;
   let overallPayable = 0;
@@ -2091,7 +2124,11 @@ const renderSuppliersTable = () => {
     purchasesBySupplier[name].push(p);
   });
 
-  state.suppliers.forEach((s) => {
+  state.suppliers.filter((s) =>
+    [s.companyName, s.contactName, s.phone]
+      .filter(Boolean)
+      .some((value) => value.toString().toLowerCase().includes(search)),
+  ).forEach((s) => {
     const company = s.companyName || "";
     // Sum paidAmount and balanceDue for this supplier from purchases
     const purList = purchasesBySupplier[company] || [];
