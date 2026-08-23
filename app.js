@@ -161,9 +161,13 @@ const populatePrintWindowContent = (
         <head>
           <title>Invoice - ${saleData.invoiceNumber}</title>
           <meta charset="utf-8">
+          <link rel="preconnect" href="https://fonts.googleapis.com">
+          <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+          <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Nastaliq+Urdu:wght@400;700&display=swap" rel="stylesheet">
           <style>
             ${pageCss}
-            body { font-family: 'Georgia', 'Times New Roman', serif; color:#222; margin:0; padding:18px; display:flex; justify-content:center; }
+            body { font-family: 'Inter', 'Noto Nastaliq Urdu', 'Georgia', serif; color:#222; margin:0; padding:18px; display:flex; justify-content:center; }
+            .urdu-text { font-family: 'Noto Nastaliq Urdu', serif; direction: rtl; line-height: 2; }
             .invoice-wrap { width:100%; max-width:${containerMaxWidth}; border: 1px solid #e6d9c6; padding:22px; background: linear-gradient(180deg,#fff 0%, #fcfbf8 100%); box-sizing:border-box; }
             .inv-header { display:flex; align-items:center; justify-content:space-between; gap:12px; }
             .logo { text-align:center; flex:1; }
@@ -265,7 +269,7 @@ const populatePrintWindowContent = (
 
             <div class="inv-footer">
               <div>${currentBusiness?.address || ""} • Phone: ${currentBusiness?.phone || ""}</div>
-              <div>${currentBusiness?.invoiceFooter || ""}</div>
+              <div class="urdu-text" dir="auto">${currentBusiness?.invoiceFooter || ""}</div>
             </div>
           </div>
           <script>${autoPrint ? "window.onload = () => { setTimeout(() => { window.print(); }, 200); };" : ""}</script>
@@ -310,7 +314,8 @@ const populatePrintWindowContent = (
         <title>Receipt - ${saleData.invoiceNumber}</title>
         <style>
           ${pageCss}
-          body { ${bodyStyle} padding: 6px; color: #000; }
+          body { ${bodyStyle} font-family: 'Inter', 'Noto Nastaliq Urdu', monospace; padding: 6px; color: #000; }
+          .urdu-text { font-family: 'Noto Nastaliq Urdu', serif; direction: rtl; line-height: 2; }
           h2, p { text-align: center; margin: 2px 0; }
           table { width: 100%; border-collapse: collapse; margin-top: 8px; }
           td { padding: 4px 0; vertical-align: top; }
@@ -348,7 +353,7 @@ const populatePrintWindowContent = (
             <td style="text-align: right;">${formatCurrency(saleData.balanceDue)}</td>
           </tr>
         </table>
-        <p style="margin-top: 10px; text-align:center;">${currentBusiness?.invoiceFooter || "Thank you for shopping!"}</p>
+        <p class="urdu-text" dir="auto" style="margin-top: 10px; text-align:center;">${currentBusiness?.invoiceFooter || "Thank you for shopping!"}</p>
         <script>
           // Auto-print on window load (user can cancel or choose printer);
           window.onload = () => { setTimeout(() => { window.print(); }, 200); };

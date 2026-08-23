@@ -22,7 +22,7 @@
   --radius-sm: 6px;
   --radius-md: 10px;
   --radius-lg: 16px;
-  --font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-family: 'Inter', 'Noto Nastaliq Urdu', -apple-system, BlinkMacSystemFont, sans-serif;
   --urdu-font: 'Noto Nastaliq Urdu', serif;
 }
 
@@ -73,6 +73,8 @@ body {
 
 .urdu-text {
   font-family: var(--urdu-font);
+  direction: rtl;
+  line-height: 2;
 }
 
 /* Buttons */
