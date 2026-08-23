@@ -116,6 +116,36 @@ window.closeModal = () => {
   if (modalContainer) modalContainer.classList.add("hidden");
 };
 
+const showDeleteConfirmation = (message) =>
+  new Promise((resolve) => {
+    const modalContainer = document.getElementById("modal-container");
+    const modalContent = document.getElementById("modal-content");
+    if (!modalContainer || !modalContent) {
+      resolve(false);
+      return;
+    }
+
+    modalContent.innerHTML = `
+      <div class="delete-confirm-modal">
+        <div class="delete-confirm-icon"><i class="fa-solid fa-trash-can"></i></div>
+        <h3>Delete Record?</h3>
+        <p>${message}</p>
+        <div class="delete-confirm-actions">
+          <button type="button" class="btn btn-secondary" id="delete-confirm-cancel">Cancel</button>
+          <button type="button" class="btn btn-danger" id="delete-confirm-approve"><i class="fa-solid fa-trash-can"></i> Delete</button>
+        </div>
+      </div>
+    `;
+    modalContainer.classList.remove("hidden");
+
+    const finish = (confirmed) => {
+      window.closeModal();
+      resolve(confirmed);
+    };
+    document.getElementById("delete-confirm-cancel")?.addEventListener("click", () => finish(false));
+    document.getElementById("delete-confirm-approve")?.addEventListener("click", () => finish(true));
+  });
+
 const normalizeToStandardUnit = (qty, unit) => {
   const parsedQty = parseFloat(qty) || 0;
   if (unit === "Gram") return parsedQty / 1000;
@@ -492,6 +522,7 @@ const navigateTo = (pageId) => {
       suppliers: "Suppliers Directory",
       expenses: "Expense Tracker",
       reports: "Financial Reports",
+      "delete-records": "Delete Records",
       settings: "Store Settings",
     };
     title.innerText = titles[pageId] || "Dashboard";
@@ -560,6 +591,16 @@ const initAppListeners = () => {
 
   const supplierSearch = document.getElementById("supplier-search-input");
   if (supplierSearch) supplierSearch.addEventListener("input", renderSuppliersTable);
+
+  document
+    .getElementById("delete-record-type")
+    ?.addEventListener("change", renderDeleteRecords);
+  document
+    .getElementById("delete-record-search")
+    ?.addEventListener("input", renderDeleteRecords);
+  document
+    .getElementById("delete-record-btn")
+    ?.addEventListener("click", deleteSelectedRecord);
 
   const posSearch = document.getElementById("pos-search");
   const posCatSelect = document.getElementById("pos-category-filter");
@@ -873,6 +914,7 @@ const setupRealtimeListeners = () => {
       renderPosProducts();
       populateCategoryDropdowns();
       renderCategoryChips();
+      renderDeleteRecords();
       updateDashboardMetrics();
     },
     handleErr,
@@ -891,6 +933,7 @@ const setupRealtimeListeners = () => {
       }));
       renderCustomersTable();
       renderPosCustomerDropdown();
+      renderDeleteRecords();
     },
     handleErr,
   );
@@ -922,6 +965,7 @@ const setupRealtimeListeners = () => {
         ...doc.data(),
       }));
       renderSuppliersTable();
+      renderDeleteRecords();
     },
     handleErr,
   );
@@ -935,6 +979,7 @@ const setupRealtimeListeners = () => {
     (snapshot) => {
       state.sales = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
       renderSalesHistoryTable();
+      renderDeleteRecords();
       updateDashboardMetrics();
       renderCharts();
     },
@@ -953,6 +998,7 @@ const setupRealtimeListeners = () => {
         ...doc.data(),
       }));
       renderPurchasesTable();
+      renderDeleteRecords();
       updateDashboardMetrics();
     },
     handleErr,
@@ -970,6 +1016,7 @@ const setupRealtimeListeners = () => {
         ...doc.data(),
       }));
       renderExpensesTable();
+      renderDeleteRecords();
     },
     handleErr,
   );
@@ -1110,7 +1157,7 @@ window.editExpenseModal = (id) => {
 };
 
 window.deleteExpense = async (id) => {
-  if (confirm("Delete expense entry?")) {
+  if (await showDeleteConfirmation("This expense entry will be permanently removed.")) {
     await deleteDoc(doc(db, "expenses", id));
     showToast("Expense removed.", "info");
   }
@@ -1739,7 +1786,7 @@ window.editProductModal = (id) => {
 };
 
 window.deleteProduct = async (id) => {
-  if (confirm("Are you sure you want to delete this product?")) {
+  if (await showDeleteConfirmation("This product will be permanently removed from your inventory.")) {
     try {
       await deleteDoc(doc(db, "products", id));
       showToast("Product deleted.", "info");
@@ -1908,7 +1955,7 @@ window.editCustomerModal = (id) => {
 };
 
 window.deleteCustomer = async (id) => {
-  if (confirm("Delete customer and their udhaar record?")) {
+  if (await showDeleteConfirmation("This customer and their Udhaar record will be permanently removed.")) {
     await deleteDoc(doc(db, "customers", id));
     showToast("Customer deleted.", "info");
   }
@@ -2336,7 +2383,7 @@ window.editSupplierModal = (id) => {
 };
 
 window.deleteSupplier = async (id) => {
-  if (confirm("Delete supplier?")) {
+  if (await showDeleteConfirmation("This supplier will be permanently removed.")) {
     await deleteDoc(doc(db, "suppliers", id));
     showToast("Supplier deleted.", "info");
   }
@@ -2575,9 +2622,88 @@ window.editPurchaseModal = (id) => {
 };
 
 window.deletePurchase = async (id) => {
-  if (confirm("Delete purchase invoice?")) {
+  if (await showDeleteConfirmation("This purchase invoice will be permanently removed.")) {
     await deleteDoc(doc(db, "purchases", id));
     showToast("Purchase removed.", "info");
+  }
+};
+
+const deleteRecordConfig = {
+  products: {
+    label: "Product",
+    items: () => state.products,
+    text: (item) => `${item.name} - ${item.barcode || item.sku || "No SKU"}`,
+  },
+  customers: {
+    label: "Customer",
+    items: () => state.customers,
+    text: (item) => `${item.name} - ${item.phone || "No phone"}`,
+  },
+  suppliers: {
+    label: "Supplier",
+    items: () => state.suppliers,
+    text: (item) => `${item.companyName} - ${item.phone || "No phone"}`,
+  },
+  purchases: {
+    label: "Purchase Invoice",
+    items: () => state.purchases,
+    text: (item) => `${item.invoiceNumber || "No invoice"} - ${item.supplierName || "Unknown supplier"}`,
+  },
+  expenses: {
+    label: "Expense",
+    items: () => state.expenses,
+    text: (item) => `${item.title} - ${formatCurrency(item.amount)}`,
+  },
+  sales: {
+    label: "Sale / Invoice",
+    items: () => state.sales,
+    text: (item) => `${item.invoiceNumber || "No invoice"} - ${item.customerName || "Walk-in"}`,
+  },
+};
+
+const renderDeleteRecords = () => {
+  const typeSelect = document.getElementById("delete-record-type");
+  const recordSelect = document.getElementById("delete-record-select");
+  if (!typeSelect || !recordSelect) return;
+
+  const type = typeSelect.value;
+  const config = deleteRecordConfig[type];
+  const search = document.getElementById("delete-record-search")?.value.toLowerCase().trim() || "";
+  const previousValue = recordSelect.value;
+  recordSelect.innerHTML = "";
+
+  (config?.items() || [])
+    .filter((item) => config.text(item).toLowerCase().includes(search))
+    .forEach((item) => {
+      const option = document.createElement("option");
+      option.value = item.id;
+      option.textContent = config.text(item);
+      recordSelect.appendChild(option);
+    });
+
+  if ([...recordSelect.options].some((option) => option.value === previousValue)) {
+    recordSelect.value = previousValue;
+  }
+};
+
+const deleteSelectedRecord = async () => {
+  const type = document.getElementById("delete-record-type")?.value;
+  const recordId = document.getElementById("delete-record-select")?.value;
+  const config = deleteRecordConfig[type];
+  const item = config?.items().find((record) => record.id === recordId);
+  if (!config || !item) {
+    showToast("Select a record to delete.", "error");
+    return;
+  }
+
+  if (!(await showDeleteConfirmation(`This ${config.label.toLowerCase()} will be permanently removed.`))) return;
+
+  try {
+    await deleteDoc(doc(db, type, recordId));
+    showToast(`${config.label} deleted.`, "info");
+    renderDeleteRecords();
+  } catch (err) {
+    showToast(`Unable to delete ${config.label.toLowerCase()}: ${err.message}`, "error");
   }
 };
 
