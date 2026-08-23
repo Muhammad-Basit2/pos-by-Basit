@@ -1328,10 +1328,18 @@ textarea:focus {
 
   .cart-header {
     margin-bottom: 10px;
+    gap: 8px;
+    flex-wrap: wrap;
   }
 
   .cart-header h3 {
     font-size: 1.05rem;
+    min-width: 0;
+    flex: 1 1 180px;
+  }
+
+  .cart-header .btn {
+    flex: 0 0 auto;
   }
 
   .cart-customer-select {
@@ -1357,6 +1365,7 @@ textarea:focus {
     padding: 8px 0;
     gap: 8px;
     align-items: flex-start;
+    flex-wrap: wrap;
   }
 
   .cart-item-info {
@@ -1365,6 +1374,16 @@ textarea:focus {
 
   .cart-item-qty-controls {
     margin: 0;
+    flex: 0 1 auto;
+  }
+
+  .cart-item > div:last-of-type {
+    width: auto !important;
+    margin-left: auto;
+  }
+
+  .cart-item > .icon-btn {
+    flex: 0 0 auto;
   }
 
   .cart-item-qty-controls input {
@@ -1414,6 +1433,8 @@ textarea:focus {
     bottom: 8px;
     max-height: min(72vh, 540px);
     height: auto;
+    overflow-y: auto;
+    overscroll-behavior: contain;
     border-radius: 18px 18px 14px 14px;
     transform: translateY(calc(100% + 22px));
     opacity: 0;
