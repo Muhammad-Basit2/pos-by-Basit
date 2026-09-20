@@ -3,13 +3,15 @@
 
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>POS BY BASIT - Retail & Inventory Management System</title>
 
   <!-- Font Awesome Icons -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <!-- Chart.js CDN -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- SheetJS for Excel/CSV imports -->
+  <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <!-- Google Fonts: Inter & Noto Nastaliq Urdu -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -57,10 +59,6 @@
           <label><i class="fa-solid fa-lock"></i> Password</label>
           <input type="password" id="login-password" placeholder="••••••••" required>
         </div>
-        <label class="remember-login">
-          <input type="checkbox" id="remember-login" checked>
-          <span>Remember me</span>
-        </label>
         <button type="submit" class="btn btn-primary btn-block"><i class="fa-solid fa-right-to-bracket"></i> Sign
           In</button>
         <div class="auth-toggle">
@@ -156,10 +154,13 @@
       <!-- Top Navbar -->
       <header class="top-header">
         <div class="header-left">
-          <button id="mobile-hamburger" class="icon-btn mobile-only"><i class="fa-solid fa-bars"></i></button>
+          <button id="sidebar-toggle-btn" class="icon-btn" title="Toggle sidebar" aria-label="Toggle sidebar" aria-expanded="true">
+            <i class="fa-solid fa-bars"></i>
+          </button>
           <h2 id="page-title">Dashboard</h2>
         </div>
         <div class="header-right">
+          <div id="connection-status" class="connection-status" aria-live="polite">Checking connection...</div>
           <div class="time-display" id="clock-display">00:00:00 PKT</div>
           <button id="quick-pos-btn" class="btn btn-accent"><i class="fa-solid fa-bolt"></i> Quick POS</button>
         </div>
@@ -205,7 +206,7 @@
                 <h3 id="dash-total-products">0</h3>
               </div>
             </div>
-            <div class="metric-card">
+            <div class="metric-card metric-card-action" id="low-stock-metric" role="button" tabindex="0" aria-label="Show low and out of stock products">
               <div class="metric-icon bg-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
               <div class="metric-info">
                 <span class="label">Low / Out Stock</span>
@@ -277,9 +278,14 @@
             <div class="pos-right card">
               <div class="cart-header">
                 <h3><i class="fa-solid fa-cart-flatbed"></i> Current Invoice Cart</h3>
-                <button id="pos-clear-cart" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i>
-                  Clear</button>
+                <div class="cart-header-actions">
+                  <button id="pos-new-invoice-btn" class="btn btn-sm btn-primary"><i class="fa-solid fa-plus"></i>
+                    New Invoice</button>
+                  <button id="pos-clear-cart" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-trash"></i>
+                    Clear</button>
+                </div>
               </div>
+              <div id="open-invoice-drafts" class="open-invoice-drafts" aria-label="Open invoices"></div>
 
               <!-- Customer Selector -->
               <div class="cart-customer-select">
@@ -351,6 +357,7 @@
                     <option value="A5">A5 (148x210mm)</option>
                   </select>
                   <button id="pos-print-preview-btn" class="btn btn-secondary btn-sm">Preview</button>
+                  <button id="pos-save-pdf-btn" class="btn btn-secondary btn-sm"><i class="fa-solid fa-file-pdf"></i> Save PDF</button>
                 </div>
 
                 <button id="pos-checkout-btn" class="btn btn-accent btn-block btn-lg"><i
@@ -370,6 +377,7 @@
               </select>
             </div>
             <div class="button-group">
+              <button id="clear-stock-filter" class="btn btn-secondary hidden"><i class="fa-solid fa-list"></i> Show All Products</button>
               <button id="add-product-btn" class="btn btn-primary"><i class="fa-solid fa-plus"></i> Add Product</button>
               <button id="manage-categories-btn" class="btn btn-secondary"><i class="fa-solid fa-layer-group"></i>
                 Categories</button>
@@ -620,11 +628,17 @@
                     <label>Shop Address</label>
                     <input type="text" id="set-shop-address" placeholder="Main Bazaar, Lahore">
                   </div>
+                  <label class="logo-remove-option">
+                    <input type="checkbox" id="set-show-address-invoice" checked>
+                    <span>Show address on invoices</span>
+                  </label>
                   <div class="form-group">
                     <label for="set-shop-logo">Invoice Logo (Optional)</label>
                     <input type="file" id="set-shop-logo" accept="image/png,image/jpeg,image/webp,image/gif">
                     <small class="settings-help">Your logo will print on all invoices. If empty, your shop name will be shown.</small>
                     <img id="shop-logo-preview" class="shop-logo-preview hidden" alt="Shop logo preview">
+                    <label for="set-logo-size">Invoice logo size <output id="set-logo-size-value">100%</output></label>
+                    <input type="range" id="set-logo-size" min="50" max="250" step="10" value="100">
                     <label class="logo-remove-option">
                       <input type="checkbox" id="set-remove-logo">
                       <span>Remove current logo</span>
@@ -660,13 +674,28 @@
                   test out the system immediately.</p>
                 <button id="load-demo-data-btn" class="btn btn-accent" style="margin-bottom: 20px;"><i
                     class="fa-solid fa-vial"></i> Load Pakistani Demo Inventory</button>
+                <button id="delete-all-stock-btn" class="btn btn-danger" style="margin-bottom: 20px;"><i
+                  class="fa-solid fa-trash-can"></i> Delete All Stock</button>
                 <hr>
-                <h4>CSV Export Capabilities</h4>
+                <h4>Import Spreadsheet Data</h4>
+                <p>Upload an Excel (.xlsx/.xls) or CSV file. Product columns: Name, Barcode/SKU, Category, Unit, Cost, Price, Stock. Customer columns: Name, Phone, CNIC, Balance.</p>
+                <div class="button-group" style="margin-top: 10px;">
+                  <button id="import-products-btn" class="btn btn-secondary"><i class="fa-solid fa-file-import"></i> Import Stock</button>
+                  <button id="import-customers-btn" class="btn btn-secondary"><i class="fa-solid fa-user-plus"></i> Import Customers</button>
+                </div>
+                <input type="file" id="import-products-file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" class="hidden">
+                <input type="file" id="import-customers-file" accept=".xlsx,.xls,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,text/csv" class="hidden">
+                <hr>
+                <h4>Data Export</h4>
                 <div class="button-group" style="margin-top: 10px;">
                   <button id="export-products-csv" class="btn btn-secondary"><i class="fa-solid fa-file-csv"></i> Export
                     Products CSV</button>
                   <button id="export-sales-csv" class="btn btn-secondary"><i class="fa-solid fa-file-csv"></i> Export
                     Sales CSV</button>
+                  <button id="export-customers-excel" class="btn btn-secondary"><i class="fa-solid fa-file-excel"></i> Customers Excel</button>
+                  <button id="export-customers-pdf" class="btn btn-secondary"><i class="fa-solid fa-file-pdf"></i> Customers PDF</button>
+                  <button id="export-products-excel" class="btn btn-secondary"><i class="fa-solid fa-file-excel"></i> Stock Excel</button>
+                  <button id="export-products-pdf" class="btn btn-secondary"><i class="fa-solid fa-file-pdf"></i> Stock PDF</button>
                 </div>
               </div>
             </div>
